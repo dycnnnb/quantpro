@@ -1,0 +1,6 @@
+2026-05-19 20:15:57 | INFO     | BUY sh600519  price=1500.0 qty=100 -> success
+2026-05-19 20:16:04 | INFO     | SELL sh600519  price=1510.0 qty=0 -> success [pnl=1000.00]
+2026-05-19 20:37:21 | INFO     | SELL sh600519  price=1510.0 qty=0 -> success [pnl=1000.00]
+2026-05-23 14:59:56 | INFO     | BUY 600519  price=1700 qty=100 -> success
+2026-05-23 15:00:02 | INFO     | BUY 000001  price=12.5 qty=1000 -> success
+2026-05-23 15:00:38 | INFO     | SELL 000001  price=10.68 qty=0 -> success [pnl=-1820.00]

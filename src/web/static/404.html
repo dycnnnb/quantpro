@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 - 页面未找到 | QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.error-container {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.error-container::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(249,115,22,.1) 0%, transparent 70%);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.error-code {
+  font-size: 180px;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-lt) 50%, var(--orange) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+  text-shadow: 0 0 80px rgba(249,115,22,.3);
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.error-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-top: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.error-desc {
+  font-size: 15px;
+  color: var(--text-3);
+  margin-top: 12px;
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.7;
+  position: relative;
+  z-index: 1;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.error-illustration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  pointer-events: none;
+}
+
+.floating-element {
+  position: absolute;
+  opacity: 0.15;
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating-element:nth-child(1) {
+  top: 10%;
+  left: 15%;
+  font-size: 48px;
+  animation-delay: 0s;
+}
+
+.floating-element:nth-child(2) {
+  top: 20%;
+  right: 20%;
+  font-size: 36px;
+  animation-delay: 1s;
+}
+
+.floating-element:nth-child(3) {
+  bottom: 25%;
+  left: 10%;
+  font-size: 42px;
+  animation-delay: 2s;
+}
+
+.floating-element:nth-child(4) {
+  bottom: 15%;
+  right: 15%;
+  font-size: 32px;
+  animation-delay: 0.5s;
+}
+
+.floating-element:nth-child(5) {
+  top: 40%;
+  left: 5%;
+  font-size: 28px;
+  animation-delay: 1.5s;
+}
+
+.floating-element:nth-child(6) {
+  top: 35%;
+  right: 8%;
+  font-size: 40px;
+  animation-delay: 2.5s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(5deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(15px) rotate(-5deg); }
+}
+
+.error-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 48px;
+  padding: 20px 32px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  position: relative;
+  z-index: 1;
+}
+
+.error-stat {
+  text-align: center;
+}
+
+.error-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--orange);
+  font-family: var(--mono);
+}
+
+.error-stat-label {
+  font-size: 12px;
+  color: var(--text-4);
+  margin-top: 4px;
+}
+
+.error-divider {
+  width: 1px;
+  background: var(--border-2);
+}
+
+.suggestions {
+  margin-top: 32px;
+  padding: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  max-width: 500px;
+  position: relative;
+  z-index: 1;
+}
+
+.suggestions-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-1);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+  border: 1px solid transparent;
+}
+
+.suggestion-item:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+  border-color: var(--border-2);
+  transform: translateX(4px);
+}
+
+.suggestion-item svg {
+  width: 16px;
+  height: 16px;
+  color: var(--orange);
+}
+
+@media (max-width: 768px) {
+  .error-code {
+    font-size: 120px;
+  }
+  
+  .error-title {
+    font-size: 22px;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .error-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .error-divider {
+    width: 100%;
+    height: 1px;
+  }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="error-container">
+  <div class="error-illustration">
+    <div class="floating-element">涨</div>
+    <div class="floating-element">钱</div>
+    <div class="floating-element">分析</div>
+    <div class="floating-element">赚</div>
+      <div class="floating-element">银</div>
+      <div class="floating-element">跌</div>
+  </div>
+  
+  <div class="error-code">404</div>
+  <h1 class="error-title">页面未找到</h1>
+  <p class="error-desc">
+    抱歉，您访问的页面不存在或已被移除。<br>
+    请检查网址是否正确，或返回首页继续操作。
+  </p>
+  
+  <div class="error-actions">
+    <button class="btn btn-primary" onclick="window.location.href='index.html'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      返回首页
+    </button>
+    <button class="btn btn-ghost" onclick="history.back()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      返回上页
+    </button>
+  </div>
+  
+  <div class="error-stats">
+    <div class="error-stat">
+      <div class="error-stat-value" id="errorTime">--:--:--</div>
+      <div class="error-stat-label">错误时间</div>
+    </div>
+    <div class="error-divider"></div>
+    <div class="error-stat">
+      <div class="error-stat-value" id="errorPath">/--</div>
+      <div class="error-stat-label">请求路径</div>
+    </div>
+    <div class="error-divider"></div>
+    <div class="error-stat">
+      <div class="error-stat-value" id="errorCode">404</div>
+      <div class="error-stat-label">错误代码</div>
+    </div>
+  </div>
+  
+  <div class="suggestions">
+    <div class="suggestions-title">您可能想要访问：</div>
+    <div class="suggestions-list">
+      <a href="index.html" class="suggestion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        个人仪表盘 - 查看账户概览和策略状态
+      </a>
+      <a href="stocks.html" class="suggestion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+        市场行情 - 浏览股票列表和实时行情
+      </a>
+      <a href="ai.html" class="suggestion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        AI助手 - 智能投资分析和建议
+      </a>
+      <a href="positions.html" class="suggestion-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        </svg>
+        我的持仓 - 管理投资组合
+      </a>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('errorTime').textContent = new Date().toLocaleTimeString('zh-CN');
+  document.getElementById('errorPath').textContent = window.location.pathname || '/';
+  
+  setInterval(() => {
+    document.getElementById('errorTime').textContent = new Date().toLocaleTimeString('zh-CN');
+  }, 1000);
+  
+  document.querySelectorAll('.suggestion-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+      this.style.borderColor = 'var(--orange)';
+    });
+    item.addEventListener('mouseleave', function() {
+      this.style.borderColor = 'transparent';
+    });
+  });
+});
+</script>
+
+</body>
+</html>

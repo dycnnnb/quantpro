@@ -1,0 +1,189 @@
+2026-05-22 22:02:25,653 [INFO] === Fetch started: 2025-05-22 ~ 2026-05-22 ===
+2026-05-22 22:02:26,803 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-22 22:02:47,851 [ERROR] Login failed: 网络接收错误。
+2026-05-22 22:02:47,852 [ERROR] No stocks to fetch
+2026-05-22 22:04:27,070 [INFO] === Fetch started: 2025-05-22 ~ 2026-05-22 ===
+2026-05-22 22:04:27,072 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-22 22:04:48,108 [WARNING] Login attempt 1 failed: 网络接收错误。
+2026-05-22 22:05:12,120 [WARNING] Login attempt 2 failed: 网络接收错误。
+2026-05-22 22:05:36,147 [WARNING] Login attempt 3 failed: 网络接收错误。
+2026-05-22 22:05:39,149 [ERROR] Login failed after 3 attempts: 网络接收错误。
+2026-05-22 22:05:39,149 [ERROR] No stocks to fetch
+2026-05-22 22:24:03,288 [INFO] === Fetch started: 2025-05-22 ~ 2026-05-22, source=sina ===
+2026-05-22 22:24:03,290 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-22 22:24:03,291 [INFO] Starting from index 0/3
+2026-05-22 22:24:05,602 [INFO] === Fetch done: 10098 rows saved, 0 skipped, 0 errors ===
+2026-05-22 22:24:05,970 [INFO] Database: 5212 stocks, 2454786 rows, 2025-12-10 ~ 2026-05-22
+2026-05-22 22:24:38,472 [INFO] === Fetch started: 2025-05-22 ~ 2026-05-22, source=sina ===
+2026-05-22 22:24:38,473 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-22 22:25:01,060 [WARNING] Sina stock list page 7 failed: HTTPSConnectionPool(host='vip.stock.finance.sina.com.cn', port=443): Read timed out. (read timeout=15)
+2026-05-22 22:25:01,060 [INFO] Total A-share stocks from sina: 165
+2026-05-22 22:25:01,061 [INFO] Starting from index 0/165
+2026-05-22 22:26:39,189 [INFO] Deleted state file
+2026-05-22 22:26:39,189 [INFO] === Fetch started: 2025-05-22 ~ 2026-05-22, source=sina ===
+2026-05-22 22:26:39,191 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-22 22:26:39,786 [INFO] Stocks from DB: 31
+2026-05-22 22:28:11,298 [WARNING] Sina stock list page 41 retry 1: HTTPSConnectionPool(host='vip.stock.finance.sina.com.cn', port=443): Read timed out. (read timeout=30)
+2026-05-22 22:29:06,910 [INFO] Using 5206 stocks from sina
+2026-05-22 22:29:06,911 [INFO] Starting from index 0/5206
+2026-05-22 22:29:40,919 [INFO] Progress: 50/5206 (1.0%) | saved=106029 skipped=29 errors=0
+2026-05-22 22:31:02,201 [INFO] Progress: 100/5206 (1.9%) | saved=358478 skipped=29 errors=0
+2026-05-22 22:32:14,829 [INFO] Progress: 150/5206 (2.9%) | saved=610878 skipped=29 errors=0
+2026-05-22 22:33:34,324 [INFO] Progress: 200/5206 (3.8%) | saved=863327 skipped=29 errors=0
+2026-05-22 22:34:56,094 [INFO] Progress: 250/5206 (4.8%) | saved=1115777 skipped=29 errors=0
+2026-05-22 22:36:14,001 [INFO] Progress: 300/5206 (5.8%) | saved=1368227 skipped=29 errors=0
+2026-05-22 22:37:33,259 [INFO] Progress: 350/5206 (6.7%) | saved=1620629 skipped=29 errors=0
+2026-05-22 22:38:40,629 [INFO] Progress: 400/5206 (7.7%) | saved=1868030 skipped=30 errors=0
+2026-05-22 22:40:05,063 [INFO] Progress: 450/5206 (8.6%) | saved=2120432 skipped=30 errors=0
+2026-05-22 22:41:22,119 [WARNING] Sina failed for sh.600640, trying baostock...
+2026-05-22 22:41:53,702 [INFO] Progress: 500/5206 (9.6%) | saved=2367737 skipped=30 errors=0
+2026-05-22 22:43:03,006 [INFO] Progress: 550/5206 (10.6%) | saved=2620139 skipped=30 errors=0
+2026-05-22 22:44:12,266 [INFO] Progress: 600/5206 (11.5%) | saved=2872589 skipped=30 errors=0
+2026-05-22 22:45:23,231 [INFO] Progress: 650/5206 (12.5%) | saved=3125039 skipped=30 errors=0
+2026-05-23 11:05:42,678 [INFO] === Fetch started: 2025-05-23 ~ 2026-05-23, source=sina ===
+2026-05-23 11:05:42,696 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-23 11:05:51,739 [INFO] Stocks from DB: 655
+2026-05-23 11:13:05,541 [INFO] === Fetch started: 2025-05-23 ~ 2026-05-23, source=sina ===
+2026-05-23 11:13:05,546 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-23 11:13:05,546 [INFO] Starting from index 0/3
+2026-05-23 11:13:11,736 [INFO] === Fetch done: 10002 rows saved, 0 skipped, 0 errors ===
+2026-05-23 11:13:28,137 [INFO] Database: 5865 stocks, 5751491 rows, 2025-10-13 ~ 2026-05-22
+2026-05-23 11:13:48,063 [INFO] === Fetch started: 2025-05-23 ~ 2026-05-23, source=sina ===
+2026-05-23 11:13:48,066 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-23 11:13:48,716 [INFO] Stocks from DB: 5304
+2026-05-23 11:13:48,717 [INFO] Using 5304 stocks from DB (sufficient)
+2026-05-23 11:13:48,717 [INFO] Starting from index 0/5304
+2026-05-23 11:16:24,502 [INFO] Progress: 500/5304 (9.4%) | saved=12367 skipped=477 errors=0
+2026-05-23 11:17:52,956 [INFO] Progress: 700/5304 (13.2%) | saved=78099 skipped=654 errors=0
+2026-05-23 11:21:35,722 [WARNING] Sina failed for sh.600939, trying baostock...
+2026-05-23 11:21:43,312 [INFO] Progress: 750/5304 (14.1%) | saved=318147 skipped=654 errors=0
+2026-05-23 11:24:47,153 [INFO] Progress: 800/5304 (15.1%) | saved=568197 skipped=654 errors=0
+2026-05-23 11:27:11,022 [INFO] Progress: 850/5304 (16.0%) | saved=811701 skipped=654 errors=0
+2026-05-23 11:29:15,579 [INFO] Progress: 900/5304 (17.0%) | saved=1061751 skipped=654 errors=0
+2026-05-23 11:31:33,251 [INFO] Progress: 950/5304 (17.9%) | saved=1311801 skipped=654 errors=0
+2026-05-23 11:33:51,161 [INFO] Progress: 1000/5304 (18.9%) | saved=1561851 skipped=654 errors=0
+2026-05-23 11:36:34,141 [WARNING] Sina failed for sh.603037, trying baostock...
+2026-05-23 11:36:42,984 [INFO] Progress: 1050/5304 (19.8%) | saved=1806900 skipped=654 errors=0
+2026-05-23 11:39:30,442 [INFO] Progress: 1100/5304 (20.7%) | saved=2056950 skipped=654 errors=0
+2026-05-23 11:42:06,626 [INFO] Progress: 1150/5304 (21.7%) | saved=2307000 skipped=654 errors=0
+2026-05-23 11:44:59,756 [INFO] Progress: 1200/5304 (22.6%) | saved=2557050 skipped=654 errors=0
+2026-05-23 12:49:40,671 [INFO] === Fetch started: 2025-05-23 ~ 2026-05-23, source=sina ===
+2026-05-23 12:49:40,674 [INFO] Database initialized: F:\日常项目\quant——project\data\db\market.db
+2026-05-23 12:49:41,721 [INFO] Stocks from DB: 5305
+2026-05-23 12:49:41,724 [INFO] Using 5305 stocks from DB (sufficient)
+2026-05-23 12:49:41,726 [INFO] Starting from index 1200/5305
+2026-05-23 12:50:24,916 [INFO] Progress: 1250/5305 (23.6%) | saved=138099 skipped=22 errors=0
+2026-05-23 12:51:38,767 [INFO] Progress: 1300/5305 (24.5%) | saved=384300 skipped=22 errors=0
+2026-05-23 12:53:04,074 [INFO] Progress: 1350/5305 (25.4%) | saved=623077 skipped=22 errors=0
+2026-05-23 12:54:23,106 [INFO] Progress: 1400/5305 (26.4%) | saved=869566 skipped=22 errors=0
+2026-05-23 12:55:43,098 [INFO] Progress: 1450/5305 (27.3%) | saved=1119616 skipped=22 errors=0
+2026-05-23 12:56:49,152 [INFO] Progress: 1500/5305 (28.3%) | saved=1369666 skipped=22 errors=0
+2026-05-23 12:58:08,103 [INFO] Progress: 1550/5305 (29.2%) | saved=1619716 skipped=22 errors=0
+2026-05-23 12:59:21,084 [INFO] Progress: 1600/5305 (30.2%) | saved=1869766 skipped=22 errors=0
+2026-05-23 13:00:25,345 [INFO] Progress: 1650/5305 (31.1%) | saved=2119816 skipped=22 errors=0
+2026-05-23 13:01:44,669 [INFO] Progress: 1700/5305 (32.0%) | saved=2369866 skipped=22 errors=0
+2026-05-23 13:03:14,184 [INFO] Progress: 1750/5305 (33.0%) | saved=2619916 skipped=22 errors=0
+2026-05-23 13:04:34,344 [INFO] Progress: 1800/5305 (33.9%) | saved=2869966 skipped=22 errors=0
+2026-05-23 13:05:52,779 [INFO] Progress: 1850/5305 (34.9%) | saved=3120016 skipped=22 errors=0
+2026-05-23 13:07:16,876 [INFO] Progress: 1900/5305 (35.8%) | saved=3370066 skipped=22 errors=0
+2026-05-23 13:08:44,492 [INFO] Progress: 1950/5305 (36.8%) | saved=3620116 skipped=22 errors=0
+2026-05-23 13:09:57,849 [INFO] Progress: 2000/5305 (37.7%) | saved=3870166 skipped=22 errors=0
+2026-05-23 13:11:12,288 [INFO] Progress: 2050/5305 (38.6%) | saved=4120216 skipped=22 errors=0
+2026-05-23 13:12:22,018 [INFO] Progress: 2100/5305 (39.6%) | saved=4370266 skipped=22 errors=0
+2026-05-23 13:13:40,302 [INFO] Progress: 2150/5305 (40.5%) | saved=4620316 skipped=22 errors=0
+2026-05-23 13:14:58,828 [INFO] Progress: 2200/5305 (41.5%) | saved=4870366 skipped=22 errors=0
+2026-05-23 13:16:04,450 [INFO] Progress: 2250/5305 (42.4%) | saved=5120416 skipped=22 errors=0
+2026-05-23 13:17:14,146 [INFO] Progress: 2300/5305 (43.4%) | saved=5368681 skipped=22 errors=0
+2026-05-23 13:18:48,169 [INFO] Progress: 2350/5305 (44.3%) | saved=5593601 skipped=22 errors=0
+2026-05-23 13:20:09,457 [INFO] Progress: 2400/5305 (45.2%) | saved=5818646 skipped=22 errors=0
+2026-05-23 13:21:26,089 [INFO] Progress: 2450/5305 (46.2%) | saved=6053693 skipped=22 errors=0
+2026-05-23 13:22:38,068 [INFO] Progress: 2500/5305 (47.1%) | saved=6298742 skipped=22 errors=0
+2026-05-23 13:23:52,801 [INFO] Progress: 2550/5305 (48.1%) | saved=6521397 skipped=22 errors=0
+2026-05-23 13:25:12,693 [INFO] Progress: 2600/5305 (49.0%) | saved=6756444 skipped=22 errors=0
+2026-05-23 13:26:34,038 [INFO] Progress: 2650/5305 (50.0%) | saved=7001493 skipped=22 errors=0
+2026-05-23 13:27:45,861 [INFO] Progress: 2700/5305 (50.9%) | saved=7235848 skipped=22 errors=0
+2026-05-23 13:29:02,269 [INFO] Progress: 2750/5305 (51.8%) | saved=7480897 skipped=22 errors=0
+2026-05-23 13:30:06,085 [INFO] Progress: 2800/5305 (52.8%) | saved=7705942 skipped=22 errors=0
+2026-05-23 13:31:11,892 [INFO] Progress: 2850/5305 (53.7%) | saved=7946027 skipped=22 errors=0
+2026-05-23 13:32:17,700 [INFO] Progress: 2900/5305 (54.7%) | saved=8186537 skipped=22 errors=0
+2026-05-23 13:33:07,195 [WARNING] Sina failed for sz.002025, trying baostock...
+2026-05-23 13:33:12,357 [WARNING] Sina failed for sz.002026, trying baostock...
+2026-05-23 13:33:17,522 [WARNING] Sina failed for sz.002027, trying baostock...
+2026-05-23 13:33:22,682 [WARNING] Sina failed for sz.002028, trying baostock...
+2026-05-23 13:33:27,853 [WARNING] Sina failed for sz.002029, trying baostock...
+2026-05-23 13:33:33,021 [WARNING] Sina failed for sz.002030, trying baostock...
+2026-05-23 13:33:38,190 [WARNING] Sina failed for sz.002031, trying baostock...
+2026-05-23 13:33:43,351 [WARNING] Sina failed for sz.002032, trying baostock...
+2026-05-23 13:34:05,716 [INFO] Progress: 2950/5305 (55.6%) | saved=8381279 skipped=22 errors=0
+2026-05-23 13:34:49,748 [WARNING] Sina failed for sz.002057, trying baostock...
+2026-05-23 13:35:38,351 [INFO] Progress: 3000/5305 (56.6%) | saved=8616326 skipped=22 errors=0
+2026-05-23 13:36:20,440 [WARNING] Sina failed for sz.002124, trying baostock...
+2026-05-23 13:36:22,636 [WARNING] Sina failed for sz.002125, trying baostock...
+2026-05-23 13:37:01,704 [INFO] Progress: 3050/5305 (57.5%) | saved=8846372 skipped=22 errors=0
+2026-05-23 13:39:04,381 [INFO] Progress: 3100/5305 (58.4%) | saved=9096422 skipped=22 errors=0
+2026-05-23 13:45:12,372 [WARNING] Sina failed for sz.002227, trying baostock...
+2026-05-23 13:45:17,538 [WARNING] Sina failed for sz.002228, trying baostock...
+2026-05-23 13:45:22,696 [WARNING] Sina failed for sz.002229, trying baostock...
+2026-05-23 13:45:27,854 [WARNING] Sina failed for sz.002230, trying baostock...
+2026-05-23 13:45:33,027 [WARNING] Sina failed for sz.002231, trying baostock...
+2026-05-23 13:45:38,194 [WARNING] Sina failed for sz.002232, trying baostock...
+2026-05-23 13:45:43,372 [WARNING] Sina failed for sz.002233, trying baostock...
+2026-05-23 13:45:48,549 [WARNING] Sina failed for sz.002234, trying baostock...
+2026-05-23 13:45:53,719 [WARNING] Sina failed for sz.002235, trying baostock...
+2026-05-23 13:45:58,883 [WARNING] Sina failed for sz.002236, trying baostock...
+2026-05-23 13:46:04,068 [WARNING] Sina failed for sz.002237, trying baostock...
+2026-05-23 13:46:09,229 [WARNING] Sina failed for sz.002238, trying baostock...
+2026-05-23 13:46:14,399 [WARNING] Sina failed for sz.002239, trying baostock...
+2026-05-23 13:46:19,568 [WARNING] Sina failed for sz.002240, trying baostock...
+2026-05-23 13:46:24,739 [WARNING] Sina failed for sz.002241, trying baostock...
+2026-05-23 13:46:29,910 [WARNING] Sina failed for sz.002242, trying baostock...
+2026-05-23 13:46:35,073 [WARNING] Sina failed for sz.002243, trying baostock...
+2026-05-23 13:46:40,251 [WARNING] Sina failed for sz.002244, trying baostock...
+2026-05-23 13:46:44,381 [WARNING] Sina failed for sz.002245, trying baostock...
+2026-05-23 13:46:44,398 [INFO] Progress: 3150/5305 (59.4%) | saved=9251453 skipped=22 errors=0
+2026-05-23 13:47:47,086 [INFO] Progress: 3200/5305 (60.3%) | saved=9491501 skipped=22 errors=0
+2026-05-23 13:48:50,920 [INFO] Progress: 3250/5305 (61.3%) | saved=9722205 skipped=22 errors=0
+2026-05-23 13:49:58,899 [INFO] Progress: 3300/5305 (62.2%) | saved=9972255 skipped=22 errors=0
+2026-05-23 13:51:10,591 [INFO] Progress: 3350/5305 (63.1%) | saved=10202301 skipped=22 errors=0
+2026-05-23 13:52:39,419 [INFO] Progress: 3400/5305 (64.1%) | saved=10437348 skipped=22 errors=0
+2026-05-23 13:53:53,142 [WARNING] Sina failed for sz.002547, trying baostock...
+2026-05-23 13:54:07,167 [INFO] Progress: 3450/5305 (65.0%) | saved=10672395 skipped=22 errors=0
+2026-05-23 13:55:32,557 [INFO] Progress: 3500/5305 (66.0%) | saved=10922445 skipped=22 errors=0
+2026-05-23 13:57:13,332 [INFO] Progress: 3550/5305 (66.9%) | saved=11162493 skipped=22 errors=0
+2026-05-23 13:58:44,670 [INFO] Progress: 3600/5305 (67.9%) | saved=11402541 skipped=22 errors=0
+2026-05-23 14:00:10,194 [INFO] Progress: 3650/5305 (68.8%) | saved=11638307 skipped=22 errors=0
+2026-05-23 14:01:50,952 [INFO] Progress: 3700/5305 (69.7%) | saved=11878355 skipped=22 errors=0
+2026-05-23 14:03:08,212 [INFO] Progress: 3750/5305 (70.7%) | saved=12128405 skipped=22 errors=0
+2026-05-23 14:04:48,371 [INFO] Progress: 3800/5305 (71.6%) | saved=12378455 skipped=22 errors=0
+2026-05-23 14:06:13,736 [INFO] Progress: 3850/5305 (72.6%) | saved=12628505 skipped=22 errors=0
+2026-05-23 14:07:30,966 [INFO] Progress: 3900/5305 (73.5%) | saved=12878555 skipped=22 errors=0
+2026-05-23 14:08:46,482 [INFO] Progress: 3950/5305 (74.5%) | saved=13128605 skipped=22 errors=0
+2026-05-23 14:10:04,386 [INFO] Progress: 4000/5305 (75.4%) | saved=13378655 skipped=22 errors=0
+2026-05-23 14:11:14,151 [INFO] Progress: 4050/5305 (76.3%) | saved=13628705 skipped=22 errors=0
+2026-05-23 14:12:32,203 [INFO] Progress: 4100/5305 (77.3%) | saved=13878755 skipped=22 errors=0
+2026-05-23 14:13:50,212 [INFO] Progress: 4150/5305 (78.2%) | saved=14128805 skipped=22 errors=0
+2026-05-23 14:15:08,348 [INFO] Progress: 4200/5305 (79.2%) | saved=14378855 skipped=22 errors=0
+2026-05-23 14:16:20,788 [INFO] Progress: 4250/5305 (80.1%) | saved=14628905 skipped=22 errors=0
+2026-05-23 14:17:27,864 [INFO] Progress: 4300/5305 (81.1%) | saved=14878955 skipped=22 errors=0
+2026-05-23 14:18:37,776 [INFO] Progress: 4350/5305 (82.0%) | saved=15129005 skipped=22 errors=0
+2026-05-23 14:19:59,629 [INFO] Progress: 4400/5305 (82.9%) | saved=15379055 skipped=22 errors=0
+2026-05-23 14:21:08,041 [INFO] Progress: 4450/5305 (83.9%) | saved=15629105 skipped=22 errors=0
+2026-05-23 14:22:26,024 [INFO] Progress: 4500/5305 (84.8%) | saved=15879155 skipped=22 errors=0
+2026-05-23 14:23:48,182 [INFO] Progress: 4550/5305 (85.8%) | saved=16129205 skipped=22 errors=0
+2026-05-23 14:25:07,655 [INFO] Progress: 4600/5305 (86.7%) | saved=16379255 skipped=22 errors=0
+2026-05-23 14:26:23,726 [INFO] Progress: 4650/5305 (87.7%) | saved=16624304 skipped=23 errors=0
+2026-05-23 14:27:35,197 [INFO] Progress: 4700/5305 (88.6%) | saved=16874354 skipped=23 errors=0
+2026-05-23 14:28:48,253 [INFO] Progress: 4750/5305 (89.5%) | saved=17124404 skipped=23 errors=0
+2026-05-23 14:29:57,296 [INFO] Progress: 4800/5305 (90.5%) | saved=17374454 skipped=23 errors=0
+2026-05-23 14:31:09,096 [INFO] Progress: 4850/5305 (91.4%) | saved=17624504 skipped=23 errors=0
+2026-05-23 14:32:21,532 [INFO] Progress: 4900/5305 (92.4%) | saved=17874554 skipped=23 errors=0
+2026-05-23 14:33:31,142 [INFO] Progress: 4950/5305 (93.3%) | saved=18124604 skipped=23 errors=0
+2026-05-23 14:34:47,660 [INFO] Progress: 5000/5305 (94.3%) | saved=18374654 skipped=23 errors=0
+2026-05-23 14:36:04,708 [INFO] Progress: 5050/5305 (95.2%) | saved=18624704 skipped=23 errors=0
+2026-05-23 14:37:19,881 [INFO] Progress: 5100/5305 (96.1%) | saved=18874754 skipped=23 errors=0
+2026-05-23 14:38:36,309 [INFO] Progress: 5150/5305 (97.1%) | saved=19124804 skipped=23 errors=0
+2026-05-23 14:39:56,763 [INFO] Progress: 5200/5305 (98.0%) | saved=19374506 skipped=23 errors=0
+2026-05-23 14:41:05,611 [INFO] Progress: 5250/5305 (99.0%) | saved=19616138 skipped=23 errors=0
+2026-05-23 14:42:11,846 [INFO] Progress: 5300/5305 (99.9%) | saved=19855014 skipped=23 errors=0
+2026-05-23 14:42:18,680 [INFO] === Fetch done: 19869230 rows saved, 23 skipped, 0 errors ===
+2026-05-23 14:42:27,686 [INFO] Database: 10400 stocks, 28287446 rows, 2025-05-23 ~ 2026-05-22

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/dyc/Desktop/量化投资//**)",
+      "Read(//c/Users/dyc/Desktop/量化投资/**)",
+      "Bash(cp \"C:/Users/dyc/Desktop/量化投资/quant_project/data/db/quantpro.db\" \"F:/日常项目/quant——project/data/db/quantpro.db\")",
+      "Bash(cp \"C:/Users/dyc/Desktop/量化投资/quant_system/data_interface/data_cache.db\" \"F:/日常项目/quant——project/data/db/market.db\")",
+      "Bash(python -c ' *)",
+      "Bash(python main.py --help)",
+      "Bash(python main.py data --help)",
+      "Bash(python main.py data info)",
+      "Bash(python main.py diagnose)",
+      "Bash(python main.py config show)",
+      "Bash(python main.py trade status)",
+      "Bash(python main.py trade history --limit 5)",
+      "Bash(python -c \"from src.news.rss_fetcher import fetch_rss_feeds, save_raw_news; print\\('rss_fetcher OK'\\)\")",
+      "Bash(python -c \"from src.news.analyzer import analyze_all_pending, aggregate_daily_factors; print\\('analyzer OK'\\)\")",
+      "Bash(python -c \"from src.features.news import NewsFeatureBuilder; print\\('news feature OK'\\)\")",
+      "Bash(python main.py news --help)",
+      "Bash(pip show *)",
+      "Bash(python -c \"import torch; print\\(f'torch {torch.__version__}'\\)\")",
+      "Bash(pip list *)",
+      "Bash(python *)",
+      "Bash(HF_ENDPOINT=https://hf-mirror.com python -c ' *)",
+      "Bash(HF_ENDPOINT=https://hf-mirror.com python *)"
+    ]
+  }
+}

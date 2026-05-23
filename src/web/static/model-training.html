@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型训练 — QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.train-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.train-grid .full{grid-column:1/-1}
+.train-card{background:var(--surface-1);border:1px solid var(--border-1);border-radius:12px;padding:20px}
+.train-card h3{font-size:16px;margin-bottom:16px;color:var(--text-1);display:flex;align-items:center;gap:8px}
+.train-card h3 .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--orange);color:#fff}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:var(--text-3);margin-bottom:4px}
+.form-group select,.form-group input[type="number"]{width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:8px;color:var(--text-1);font-size:14px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.toggle-row span{font-size:14px;color:var(--text-2)}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--surface-3);border-radius:12px;transition:.3s}
+.toggle .slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--orange)}
+.toggle input:checked+.slider:before{transform:translateX(20px)}
+.status-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:14px}
+.status-bar.idle{background:var(--surface-2)}
+.status-bar.running{background:rgba(34,197,94,.08);border:1px solid var(--green)}
+.status-bar.error{background:rgba(239,68,68,.08);border:1px solid var(--red)}
+.status-dot{width:10px;height:10px;border-radius:50%}
+.status-dot.idle{background:var(--text-4)}
+.status-dot.running{background:var(--green);animation:pulse 1.5s infinite}
+.status-dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.console{background:var(--bg);border:1px solid var(--border-1);border-radius:8px;padding:12px;font-family:var(--mono);font-size:12px;line-height:1.6;max-height:350px;overflow-y:auto;color:var(--text-3)}
+.console .log-line{white-space:pre-wrap;word-break:break-all}
+.console .log-line.error{color:var(--red)}
+.console .log-line.success{color:var(--green)}
+.console .log-line.info{color:var(--orange)}
+.factor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;max-height:400px;overflow-y:auto;padding-right:4px}
+.factor-chip{padding:4px 8px;background:var(--surface-2);border-radius:6px;font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.factor-chip.alpha{border-left:2px solid var(--orange)}
+.factor-chip.custom{border-left:2px solid var(--green)}
+.factor-chip.raw{border-left:2px solid var(--yellow,#f59e0b)}
+.report-card{background:var(--surface-2);border:1px solid var(--border-1);border-radius:8px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+.report-card:hover{border-color:var(--orange)}
+.report-card .meta{display:flex;gap:16px;font-size:12px;color:var(--text-3);margin-top:6px}
+.report-card .score{font-size:20px;font-weight:700;color:var(--green)}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px}
+.tab{padding:6px 16px;border-radius:6px;font-size:13px;cursor:pointer;background:transparent;color:var(--text-3);border:1px solid transparent;transition:all .2s}
+.tab.active{background:var(--orange-10);color:var(--orange);border-color:rgba(249,115,22,.2)}
+.tab:hover:not(.active){border-color:var(--border-2);color:var(--text-2)}
+</style>
+</head>
+<body>
+<script src="js/config.js?v=20260310a"></script>
+<script src="js/utils.js?v=20260310a"></script>
+<script src="js/storage.js?v=20260310a"></script>
+<script src="js/api.js?v=20260310a"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html" class="active">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">模型训练</h1>
+      <p class="page-sub">滚动窗口训练 · 多模型集成 · Alpha158因子</p>
+    </div>
+    <div class="row gap-8">
+      <span id="trainStatusBadge" class="badge badge-gray">空闲</span>
+    </div>
+  </div>
+
+  <div class="train-grid">
+    <div class="train-card">
+      <h3>训练配置</h3>
+      <div class="form-group">
+        <label>训练模式</label>
+        <select id="mode">
+          <option value="classification">二分类 (Buy/Sell)</option>
+          <option value="regression">回归 (预测收益率)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>数据频率</label>
+        <select id="freq">
+          <option value="daily">日线数据</option>
+          <option value="minute">5分钟线数据 (含日内特征)</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <span>Alpha158 因子 (110个)</span>
+        <label class="toggle"><input type="checkbox" id="alpha158" checked><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>GPU 加速</span>
+        <label class="toggle"><input type="checkbox" id="gpu" checked><span class="slider"></span></label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group"><label>训练窗口(天)</label><input type="number" id="trainDays" value="500"></div>
+        <div class="form-group"><label>验证窗口(天)</label><input type="number" id="validDays" value="60"></div>
+        <div class="form-group"><label>滚动步长(天)</label><input type="number" id="stepDays" value="60"></div>
+        <div class="form-group"><label>前瞻窗口(天)</label><input type="number" id="forward" value="10"></div>
+        <div class="form-group"><label>Top%</label><input type="number" id="topPct" value="0.15" step="0.05" min="0.05" max="0.5"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <button class="btn btn-primary" id="startBtn" onclick="startTraining()">开始训练</button>
+      </div>
+    </div>
+
+    <div class="train-card">
+      <h3>训练状态</h3>
+      <div class="status-bar idle" id="statusBar">
+        <span class="status-dot idle" id="statusDot"></span>
+        <span id="statusText">空闲</span>
+      </div>
+      <div id="statusDetail" style="font-size:13px;color:var(--text-3)"></div>
+
+      <h3 style="margin-top:20px">训练报告</h3>
+      <div id="reportsList" style="max-height:200px;overflow-y:auto">
+        <div style="color:var(--text-3);font-size:13px;padding:20px;text-align:center">加载中...</div>
+      </div>
+    </div>
+
+    <div class="train-card full">
+      <h3>训练控制台 <span class="badge" id="logCount">0行</span></h3>
+      <div class="console" id="logConsole">
+        <div class="log-line info">等待训练启动...</div>
+      </div>
+    </div>
+
+    <div class="train-card full">
+      <h3>因子库 <span class="badge" id="factorCount">-</span></h3>
+      <div class="tab-bar">
+        <div class="tab active" onclick="showFactorTab('alpha158')">Alpha158</div>
+        <div class="tab" onclick="showFactorTab('custom')">自定义因子</div>
+        <div class="tab" onclick="showFactorTab('raw')">原始OHLCV</div>
+      </div>
+      <div class="factor-grid" id="factorGrid">
+        <div style="color:var(--text-3);font-size:13px;padding:20px">加载中...</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const TRAIN_API=typeof CONFIG!=='undefined'?CONFIG.API_BASE_URL:'';
+let currentFactorTab='alpha158';
+let allFactors={};
+let logOffset=0;
+let pollTimer=null;
+
+function appendLog(text,cls){
+    const con=document.getElementById('logConsole');
+    const div=document.createElement('div');
+    div.className='log-line '+(cls||'');
+    div.textContent=text;
+    con.appendChild(div);
+    con.scrollTop=con.scrollHeight;
+}
+
+async function startTraining(){
+    const btn=document.getElementById('startBtn');
+    btn.disabled=true;
+    btn.textContent='启动中...';
+    try{
+        const res=await fetch(`${TRAIN_API}/api/train/start`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                mode:document.getElementById('mode').value,
+                freq:document.getElementById('freq').value,
+                alpha158:document.getElementById('alpha158').checked,
+                gpu:document.getElementById('gpu').checked,
+                train_days:+document.getElementById('trainDays').value,
+                valid_days:+document.getElementById('validDays').value,
+                step_days:+document.getElementById('stepDays').value,
+                forward:+document.getElementById('forward').value,
+                top_pct:+document.getElementById('topPct').value,
+            })
+        });
+        const data=await res.json();
+        if(!data.success){
+            alert(data.error||'启动失败');
+        }else{
+            logOffset=0;
+            document.getElementById('logConsole').innerHTML='';
+            appendLog('训练已启动...','info');
+            startLogPolling();
+        }
+    }catch(e){
+        alert('网络错误: '+e.message);
+    }
+    finally{btn.disabled=false;btn.textContent='开始训练'}
+}
+
+function startLogPolling(){
+    if(pollTimer)clearInterval(pollTimer);
+    pollTimer=setInterval(pollLogs,3000);
+    pollLogs();
+    updateStatus();
+}
+
+async function pollLogs(){
+    try{
+        const res=await fetch(`${API}/api/train/logs?after=${logOffset}`);
+        const data=await res.json();
+        if(data.logs&&data.logs.length>0){
+            data.logs.forEach(line=>{
+                let cls='';
+                if(line.includes('ERROR')||line.includes('❌')||line.includes('Traceback'))cls='error';
+                else if(line.includes('✅')||line.includes('完成'))cls='success';
+                else if(line.includes('---')||line.includes('Fold'))cls='info';
+                appendLog(line,cls);
+            });
+            logOffset=data.total;
+            document.getElementById('logCount').textContent=data.total+'行';
+        }
+        if(!data.running&&data.error){
+            appendLog('❌ 错误: '+data.error,'error');
+            clearInterval(pollTimer);
+            pollTimer=null;
+            updateStatus();
+            loadReports();
+        }else if(!data.running){
+            clearInterval(pollTimer);
+            pollTimer=null;
+            updateStatus();
+            loadReports();
+        }
+    }catch(e){
+        console.error('日志轮询失败:',e);
+    }
+}
+
+async function updateStatus(){
+    try{
+        const res=await fetch(`${API}/api/train/status`);
+        const data=await res.json();
+        const bar=document.getElementById('statusBar');
+        const dot=document.getElementById('statusDot');
+        const txt=document.getElementById('statusText');
+        const detail=document.getElementById('statusDetail');
+        const badge=document.getElementById('trainStatusBadge');
+
+        if(data.running){
+            bar.className='status-bar running';
+            dot.className='status-dot running';
+            txt.textContent='训练中...';
+            badge.className='badge badge-green';
+            badge.textContent='训练中';
+            const cfg=data.config||{};
+            detail.innerHTML=`
+                <div>模式: ${cfg.mode||'-'} | Alpha158: ${cfg.alpha158?'ON':'OFF'} | GPU: ${cfg.gpu?'ON':'OFF'}</div>
+                <div>训练: ${cfg.train_days||'-'}天 | 验证: ${cfg.valid_days||'-'}天 | 步长: ${cfg.step_days||'-'}天</div>
+            `;
+            if(pollTimer)setTimeout(updateStatus,10000);
+        }else if(data.error){
+            bar.className='status-bar error';
+            dot.className='status-dot error';
+            txt.textContent='训练失败';
+            badge.className='badge badge-red';
+            badge.textContent='失败';
+            detail.innerHTML=`<div style="color:var(--red)">❌ ${data.error}</div>`;
+        }else{
+            bar.className='status-bar idle';
+            dot.className='status-dot idle';
+            txt.textContent='空闲';
+            badge.className='badge badge-gray';
+            badge.textContent='空闲';
+            detail.innerHTML='<div style="color:var(--green)">✅ 就绪</div>';
+        }
+    }catch(e){
+        console.error('状态查询失败:',e);
+    }
+}
+
+async function loadReports(){
+    try{
+        const res=await fetch(`${API}/api/train/reports`);
+        const data=await res.json();
+        const el=document.getElementById('reportsList');
+        if(!data.reports||data.reports.length===0){
+            el.innerHTML='<div style="color:var(--text-3);font-size:13px;padding:20px;text-align:center">暂无训练报告</div>';
+            return;
+        }
+        el.innerHTML=data.reports.map(r=>`
+            <div class="report-card" onclick="viewReport('${r.file}')">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600">${r.best_config||'-'}</span>
+                    <span class="score">${(r.best_score||0).toFixed(4)}</span>
+                </div>
+                <div class="meta">
+                    <span>${r.timestamp||'-'}</span>
+                    <span>${r.mode||'-'}</span>
+                    <span>Alpha158: ${r.alpha158?'✓':'✗'}</span>
+                    <span>${r.n_features||0}因子</span>
+                    <span>${r.n_folds||0}折</span>
+                </div>
+            </div>
+        `).join('');
+    }catch(e){
+        document.getElementById('reportsList').innerHTML='<div style="color:var(--red)">加载失败</div>';
+    }
+}
+
+async function viewReport(filename){
+    try{
+        const res=await fetch(`${API}/api/train/report/${filename}`);
+        const data=await res.json();
+        if(!data.success)return;
+        const r=data.report;
+        const folds=r.fold_results||[];
+        let msg=`训练报告: ${r.best_config}\n`;
+        msg+=`最优分数: ${r.best_score?.toFixed(4)}\n`;
+        msg+=`因子数: ${r.n_features}\n`;
+        msg+=`模式: ${r.mode} | Alpha158: ${r.alpha158?'ON':'OFF'} | GPU: ${r.gpu?'ON':'OFF'}\n\n`;
+        msg+=`--- 各折结果 ---\n`;
+        folds.forEach(f=>{
+            msg+=`Fold ${f.fold} ${f.config}: IC=${f.rank_ic?.toFixed(4)} ICIR=${f.icir?.toFixed(4)}`;
+            if(f.auc!==undefined)msg+=` AUC=${f.auc?.toFixed(4)}`;
+            msg+=` Score=${f.score?.toFixed(4)}\n`;
+        });
+        alert(msg);
+    }catch(e){alert('加载报告失败')}
+}
+
+async function loadFactors(){
+    try{
+        const res=await fetch(`${API}/api/train/factors`);
+        const data=await res.json();
+        allFactors=data;
+        document.getElementById('factorCount').textContent=`${data.total_count}个因子`;
+        renderFactors();
+    }catch(e){
+        document.getElementById('factorGrid').innerHTML='<div style="color:var(--red)">加载失败</div>';
+    }
+}
+
+function showFactorTab(tab){
+    currentFactorTab=tab;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    event.target.classList.add('active');
+    renderFactors();
+}
+
+function renderFactors(){
+    const grid=document.getElementById('factorGrid');
+    let factors=[];
+    let cls='';
+    if(currentFactorTab==='alpha158'){factors=allFactors.alpha158||[];cls='alpha'}
+    else if(currentFactorTab==='custom'){factors=allFactors.custom||[];cls='custom'}
+    else{factors=allFactors.raw_ohlcv||[];cls='raw'}
+
+    if(factors.length===0){
+        grid.innerHTML='<div style="color:var(--text-3)">无数据</div>';
+        return;
+    }
+    grid.innerHTML=factors.map(f=>`<div class="factor-chip ${cls}" title="${f.description||''}">${f.name}</div>`).join('');
+}
+
+updateStatus();
+loadReports();
+loadFactors();
+</script>
+</body>
+</html>

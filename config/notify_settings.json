@@ -1,0 +1,6 @@
+{
+  "notify_wechat": "1",
+  "notify_email": "0",
+  "notify_feishu": "0",
+  "wechat_webhook": "https://example.com/test"
+}

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 基金详情</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div style="margin-bottom:20px">
+    <div class="text-sm text-muted" style="margin-bottom:8px">
+      <a href="stocks.html" style="color:var(--text-3)">市场</a>
+      <span style="margin:0 6px">›</span>
+      <a href="stocks.html" style="color:var(--text-3)">市场</a>
+      <span style="margin:0 6px">›</span>
+      <span id="breadName">加载中...</span>
+    </div>
+    <div class="row-between" style="flex-wrap:wrap;gap:12px">
+      <div class="row gap-16" style="align-items:flex-end">
+        <div>
+          <div style="font-size:22px;font-weight:700" id="fundName">加载中...</div>
+          <div class="text-muted font-mono" style="font-size:13px;margin-top:2px" id="fundCode">加载中...</div>
+        </div>
+        <div>
+          <div style="font-size:32px;font-weight:700;font-family:var(--mono)" id="fundNav">
+            <div class="loading-spinner" style="width:24px;height:24px"></div>
+          </div>
+          <div style="font-size:14px;margin-top:2px" id="fundChange">加载中...</div>
+        </div>
+      </div>
+      <div class="row gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="toggleWatch()" id="watchBtn">加自选</button>
+        <button class="btn btn-ghost btn-sm" onclick="analyzeFund()" id="analyzeBtn">AI分析</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">累计净值</div>
+        <div class="stat-value font-mono" id="statAccNav"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">成立以来收益 <span id="statTotalReturn">加载中...</span></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">近1月收益</div>
+        <div class="stat-value font-mono" id="stat1Month"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">同类排名 <span id="stat1MonthRank">加载中...</span></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">近1年收益</div>
+        <div class="stat-value font-mono" id="stat1Year"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">同类排名 <span id="stat1YearRank">加载中...</span></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">基金规模</div>
+        <div class="stat-value font-mono" id="statScale"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">成立日期 <span id="statEstablish">加载中...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="row gap-12">
+        <div class="card-title" id="chartTitle">净值走势</div>
+        <span class="badge badge-green" id="navBadge">+0.00%</span>
+      </div>
+      <div class="row gap-6">
+        <button class="btn btn-ghost btn-sm navperiod-btn" data-p="1m">1月</button>
+        <button class="btn btn-ghost btn-sm navperiod-btn" data-p="3m">3月</button>
+        <button class="btn btn-ghost btn-sm navperiod-btn navperiod-active" data-p="6m">6月</button>
+        <button class="btn btn-ghost btn-sm navperiod-btn" data-p="1y">1年</button>
+        <button class="btn btn-ghost btn-sm navperiod-btn" data-p="all">全部</button>
+      </div>
+    </div>
+    <div id="navChartContainer" style="position:relative;min-height:320px">
+      <div id="chartLoading" style="display:flex;align-items:center;justify-content:center;min-height:320px">
+        <div style="width:32px;height:32px;border:3px solid var(--surface-3);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin-right:12px"></div>
+        <div style="color:var(--text-4);font-size:14px">加载净值数据...</div>
+      </div>
+      <canvas id="navChart" style="width:100%;height:320px;display:none;cursor:crosshair"></canvas>
+    </div>
+    <div id="navTooltip" style="display:none;position:absolute;background:var(--surface-3);border:1px solid var(--border-2);border-radius:8px;padding:8px 12px;font-size:12px;font-family:var(--mono);pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.3)"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:20px">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">基金简介</div>
+        <div class="text-sm" style="line-height:1.8;color:var(--text-2)" id="fundDesc">
+          加载中...
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px">
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">基金经理</div>
+            <div class="font-semibold text-sm" id="infoManager">加载中...</div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">基金公司</div>
+            <div class="font-semibold text-sm" id="infoCompany">加载中...</div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">基金类型</div>
+            <div class="font-semibold text-sm" id="infoType">加载中...</div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">管理费</div>
+            <div class="font-semibold text-sm" id="infoManageFee">加载中...</div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">托管费</div>
+            <div class="font-semibold text-sm" id="infoCustodyFee">加载中...</div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px;border:1px solid var(--border-1)">
+            <div class="text-xs text-muted" style="margin-bottom:4px">申购状态</div>
+            <div class="font-semibold text-sm" id="infoStatus">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between" style="margin-bottom:14px">
+          <div class="card-title">持仓明细</div>
+          <span class="text-xs text-muted" id="holdingDate">数据日期: 加载中...</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>股票名称</th>
+                <th>持仓占比</th>
+                <th>持仓市值</th>
+                <th>较上期变化</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsBody">
+              <tr><td colspan="4" class="text-muted text-sm" style="text-align:center;padding:20px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between" style="margin-bottom:14px">
+          <div class="card-title">行业配置</div>
+          <span class="text-xs text-muted">前十大行业</span>
+        </div>
+        <div id="industryContainer" style="display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;padding:20px;color:var(--text-4)">加载中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">收益统计</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近1周</span>
+            <span class="font-semibold font-mono-num" id="return1w">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近1月</span>
+            <span class="font-semibold font-mono-num" id="return1m">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近3月</span>
+            <span class="font-semibold font-mono-num" id="return3m">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近6月</span>
+            <span class="font-semibold font-mono-num" id="return6m">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近1年</span>
+            <span class="font-semibold font-mono-num" id="return1y">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">近3年</span>
+            <span class="font-semibold font-mono-num" id="return3y">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-3);border-radius:8px;border:1px solid var(--border-2)">
+            <span class="text-sm font-semibold">成立以来</span>
+            <span class="font-semibold font-mono-num" id="returnTotal">加载中...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">风险指标</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">最大回撤</span>
+            <span class="font-semibold font-mono-num text-red" id="riskMaxDrawdown">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">夏普比率</span>
+            <span class="font-semibold font-mono-num" id="riskSharpe">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">波动率</span>
+            <span class="font-semibold font-mono-num" id="riskVolatility">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">Beta</span>
+            <span class="font-semibold font-mono-num" id="riskBeta">加载中...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">基金经理</div>
+        <div id="managerInfo" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:20px">[User]</div>
+            <div>
+              <div class="font-semibold" id="managerName">加载中...</div>
+              <div class="text-xs text-muted" id="managerTenure">任职期限: 加载中...</div>
+            </div>
+          </div>
+          <div style="padding:12px;background:var(--surface-1);border-radius:8px">
+            <div class="text-xs text-muted" style="margin-bottom:4px">任职回报</div>
+            <div class="font-semibold font-mono" id="managerReturn">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">费率信息</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">申购费率</span>
+            <span class="font-semibold font-mono-num" id="feePurchase">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">赎回费率</span>
+            <span class="font-semibold font-mono-num" id="feeRedeem">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">管理费</span>
+            <span class="font-semibold font-mono-num" id="feeManage">加载中...</span>
+          </div>
+          <div class="row-between" style="padding:10px 12px;background:var(--surface-1);border-radius:8px">
+            <span class="text-sm">托管费</span>
+            <span class="font-semibold font-mono-num" id="feeCustody">加载中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.navperiod-btn.navperiod-active {
+  background: var(--orange-10);
+  color: var(--orange);
+  border-color: rgba(249,115,22,.2);
+}
+</style>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+
+const params = new URLSearchParams(location.search);
+const code = params.get('code') || '000001';
+const name = params.get('name') || '基金';
+
+let fundData = null;
+let navHistory = [];
+let currentPeriod = '6m';
+
+async function loadFundDetail() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/fund/detail/${code}`);
+    
+    if (result && result.success && result.data) {
+      fundData = result.data;
+      renderFundInfo(fundData);
+      renderNavChart(fundData.nav_history || []);
+      renderHoldings(fundData.holdings || []);
+      renderIndustry(fundData.industry || []);
+    } else {
+      console.error('[基金] 错误:', result?.error);
+      showError(result.error || '获取基金数据失败');
+    }
+  } catch (e) {
+    console.error('========== [错误] 加载基金详情失败 ==========');
+    console.error('错误:', e);
+    showError('连接后端服务失败，请检查服务是否正常运行');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('chartLoading').innerHTML = `
+    <div style="text-align:center;color:var(--text-4)">
+      <div style="margin-bottom:8px">警告: ${msg}</div>
+      <button class="btn btn-primary btn-sm" onclick="loadFundDetail()">重新加载</button>
+    </div>
+  `;
+  // 清除所有stat-card和信息区域的加载状态
+  const fallbackIds = [
+    'fundNav', 'fundChange', 'statAccNav', 'statTotalReturn',
+    'stat1Month', 'stat1MonthRank', 'stat1Year', 'stat1YearRank',
+    'statScale', 'statEstablish',
+    'infoManager', 'infoCompany', 'infoType', 'infoManageFee', 'infoCustodyFee', 'infoStatus',
+    'return1w', 'return1m', 'return3m', 'return6m', 'return1y', 'return3y', 'returnTotal',
+    'riskMaxDrawdown', 'riskSharpe', 'riskVolatility', 'riskBeta',
+    'managerName', 'managerTenure', 'managerReturn',
+    'feePurchase', 'feeRedeem', 'feeManage', 'feeCustody',
+    'holdingDate'
+  ];
+  fallbackIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '--';
+  });
+  document.getElementById('fundChange').textContent = '数据加载失败';
+  document.getElementById('fundDesc').textContent = '暂无简介';
+  const holdingsBody = document.getElementById('holdingsBody');
+  if (holdingsBody) holdingsBody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-4)">暂无数据</td></tr>';
+  const industryContainer = document.getElementById('industryContainer');
+  if (industryContainer) industryContainer.innerHTML = '<div style="text-align:center;color:var(--text-4);padding:20px">暂无数据</div>';
+}
+
+function renderFundInfo(data) {
+  document.getElementById('breadName').textContent = data.name || name;
+  document.getElementById('fundName').textContent = data.name || name;
+  document.getElementById('fundCode').textContent = `${code} · ${data.fund_type || '混合型'} · ${data.fund_company || ''}`;
+  
+  if (data.nav) {
+    document.getElementById('fundNav').textContent = data.nav.toFixed(4);
+  }
+  
+  if (data.change_pct !== undefined) {
+    const changeClass = data.change_pct >= 0 ? 'text-green' : 'text-red';
+    const changeSign = data.change_pct >= 0 ? '+' : '';
+    document.getElementById('fundChange').innerHTML = `<span class="${changeClass}">${changeSign}${data.change_pct.toFixed(2)}%</span>`;
+    document.getElementById('navBadge').textContent = `${changeSign}${data.change_pct.toFixed(2)}%`;
+    document.getElementById('navBadge').className = `badge ${data.change_pct >= 0 ? 'badge-green' : 'badge-red'}`;
+  }
+  
+  document.getElementById('statAccNav').textContent = data.acc_nav ? data.acc_nav.toFixed(4) : '--';
+  document.getElementById('statTotalReturn').textContent = data.total_return ? `${(data.total_return * 100).toFixed(2)}%` : '--';
+  
+  document.getElementById('stat1Month').textContent = data.return_1m !== undefined ? `${(data.return_1m * 100).toFixed(2)}%` : '--';
+  document.getElementById('stat1MonthRank').textContent = data.rank_1m || '--';
+  document.getElementById('stat1Year').textContent = data.return_1y !== undefined ? `${(data.return_1y * 100).toFixed(2)}%` : '--';
+  document.getElementById('stat1YearRank').textContent = data.rank_1y || '--';
+  document.getElementById('statScale').textContent = data.scale ? `${(data.scale / 100000000).toFixed(2)}亿` : '--';
+  document.getElementById('statEstablish').textContent = data.establish_date || '--';
+  
+  document.getElementById('fundDesc').textContent = data.description || '暂无简介';
+  document.getElementById('infoManager').textContent = data.manager || '--';
+  document.getElementById('infoCompany').textContent = data.fund_company || '--';
+  document.getElementById('infoType').textContent = data.fund_type || '--';
+  document.getElementById('infoManageFee').textContent = data.manage_fee ? `${(data.manage_fee * 100).toFixed(2)}%` : '--';
+  document.getElementById('infoCustodyFee').textContent = data.custody_fee ? `${(data.custody_fee * 100).toFixed(2)}%` : '--';
+  document.getElementById('infoStatus').textContent = data.status || '正常';
+  
+  document.getElementById('return1w').textContent = data.return_1w !== undefined ? `${(data.return_1w * 100).toFixed(2)}%` : '--';
+  document.getElementById('return1m').textContent = data.return_1m !== undefined ? `${(data.return_1m * 100).toFixed(2)}%` : '--';
+  document.getElementById('return3m').textContent = data.return_3m !== undefined ? `${(data.return_3m * 100).toFixed(2)}%` : '--';
+  document.getElementById('return6m').textContent = data.return_6m !== undefined ? `${(data.return_6m * 100).toFixed(2)}%` : '--';
+  document.getElementById('return1y').textContent = data.return_1y !== undefined ? `${(data.return_1y * 100).toFixed(2)}%` : '--';
+  document.getElementById('return3y').textContent = data.return_3y !== undefined ? `${(data.return_3y * 100).toFixed(2)}%` : '--';
+  document.getElementById('returnTotal').textContent = data.total_return !== undefined ? `${(data.total_return * 100).toFixed(2)}%` : '--';
+  
+  document.getElementById('riskMaxDrawdown').textContent = data.max_drawdown !== undefined ? `${(data.max_drawdown * 100).toFixed(2)}%` : '--';
+  document.getElementById('riskSharpe').textContent = data.sharpe !== undefined ? data.sharpe.toFixed(2) : '--';
+  document.getElementById('riskVolatility').textContent = data.volatility !== undefined ? `${(data.volatility * 100).toFixed(2)}%` : '--';
+  document.getElementById('riskBeta').textContent = data.beta !== undefined ? data.beta.toFixed(2) : '--';
+  
+  document.getElementById('managerName').textContent = data.manager || '--';
+  document.getElementById('managerTenure').textContent = `任职期限: ${data.tenure || '--'}`;
+  document.getElementById('managerReturn').textContent = data.manager_return !== undefined ? `${(data.manager_return * 100).toFixed(2)}%` : '--';
+  
+  document.getElementById('feePurchase').textContent = data.purchase_fee ? `${(data.purchase_fee * 100).toFixed(2)}%` : '--';
+  document.getElementById('feeRedeem').textContent = data.redeem_fee ? `${(data.redeem_fee * 100).toFixed(2)}%` : '--';
+  document.getElementById('feeManage').textContent = data.manage_fee ? `${(data.manage_fee * 100).toFixed(2)}%` : '--';
+  document.getElementById('feeCustody').textContent = data.custody_fee ? `${(data.custody_fee * 100).toFixed(2)}%` : '--';
+}
+
+function renderNavChart(history) {
+  navHistory = history;
+  const canvas = document.getElementById('navChart');
+  const loading = document.getElementById('chartLoading');
+  const container = document.getElementById('navChartContainer');
+  
+  if (!history || history.length === 0) {
+    loading.innerHTML = '<div style="text-align:center;color:var(--text-4)">暂无净值数据</div>';
+    return;
+  }
+  
+  loading.style.display = 'none';
+  canvas.style.display = 'block';
+  
+  const dpr = window.devicePixelRatio || 1;
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 320 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '320px';
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  
+  drawNavChart();
+}
+
+function drawNavChart() {
+  const canvas = document.getElementById('navChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.width / dpr;
+  const h = 320;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  if (!navHistory || navHistory.length === 0) return;
+  
+  const periodData = filterByPeriod(navHistory, currentPeriod);
+  if (periodData.length === 0) {
+    ctx.fillStyle = '#71717a';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂无数据', w / 2, h / 2);
+    return;
+  }
+  
+  const values = periodData.map(d => d.nav || d.value);
+  const dates = periodData.map(d => d.date);
+  const min = Math.min(...values) * 0.98;
+  const max = Math.max(...values) * 1.02;
+  
+  const pad = { l: 60, r: 20, t: 20, b: 30 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+  
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (i / 4) * ch;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(w - pad.r, y);
+    ctx.stroke();
+    
+    const val = max - (i / 4) * (max - min);
+    ctx.fillStyle = '#71717a';
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(4), pad.l - 8, y + 4);
+  }
+  
+  const xs = values.map((_, i) => pad.l + (i / (values.length - 1)) * cw);
+  const ys = values.map(v => pad.t + ch - ((v - min) / (max - min)) * ch);
+  
+  const grad = ctx.createLinearGradient(0, pad.t, 0, h);
+  grad.addColorStop(0, 'rgba(249,115,22,.25)');
+  grad.addColorStop(1, 'rgba(249,115,22,0)');
+  
+  ctx.beginPath();
+  ctx.moveTo(xs[0], ys[0]);
+  for (let i = 1; i < xs.length; i++) {
+    const mx = (xs[i-1] + xs[i]) / 2;
+    const my = (ys[i-1] + ys[i]) / 2;
+    ctx.quadraticCurveTo(xs[i-1], ys[i-1], mx, my);
+  }
+  ctx.lineTo(xs[xs.length - 1], ys[ys.length - 1]);
+  ctx.lineTo(xs[xs.length - 1], h - pad.b);
+  ctx.lineTo(xs[0], h - pad.b);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.moveTo(xs[0], ys[0]);
+  for (let i = 1; i < xs.length; i++) {
+    const mx = (xs[i-1] + xs[i]) / 2;
+    const my = (ys[i-1] + ys[i]) / 2;
+    ctx.quadraticCurveTo(xs[i-1], ys[i-1], mx, my);
+  }
+  ctx.lineTo(xs[xs.length - 1], ys[ys.length - 1]);
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  const lastX = xs[xs.length - 1];
+  const lastY = ys[ys.length - 1];
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#f97316';
+  ctx.fill();
+}
+
+function filterByPeriod(data, period) {
+  if (!data || data.length === 0) return [];
+  
+  const now = new Date();
+  let startDate;
+  
+  switch (period) {
+    case '1m':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      break;
+    case '3m':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      break;
+    case '6m':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+      break;
+    case '1y':
+      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      break;
+    case 'all':
+    default:
+      return data;
+  }
+  
+  return data.filter(d => new Date(d.date) >= startDate);
+}
+
+function renderHoldings(holdings) {
+  const tbody = document.getElementById('holdingsBody');
+  if (!tbody) return;
+  
+  if (!holdings || holdings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-4)">暂无持仓数据</td></tr>';
+    return;
+  }
+  
+  document.getElementById('holdingDate').textContent = `数据日期: ${holdings[0]?.date || '--'}`;
+  
+  tbody.innerHTML = holdings.map(h => `
+    <tr>
+      <td><span class="font-semibold">${h.name || h.stock_name}</span></td>
+      <td class="font-mono-num">${(h.ratio * 100).toFixed(2)}%</td>
+      <td class="font-mono-num">${h.value ? (h.value / 100000000).toFixed(2) + '亿' : '--'}</td>
+      <td class="${h.change >= 0 ? 'text-green' : 'text-red'}">${h.change >= 0 ? '+' : ''}${(h.change * 100).toFixed(2)}%</td>
+    </tr>
+  `).join('');
+}
+
+function renderIndustry(industries) {
+  const container = document.getElementById('industryContainer');
+  if (!container) return;
+  
+  if (!industries || industries.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-4);padding:20px">暂无行业配置数据</div>';
+    return;
+  }
+  
+  container.innerHTML = industries.map(ind => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface-1);border-radius:8px">
+      <div style="flex:1">
+        <div style="font-size:13px">${ind.name || ind.industry}</div>
+        <div style="height:4px;background:var(--surface-3);border-radius:2px;margin-top:6px;overflow:hidden">
+          <div style="width:${(ind.ratio * 100).toFixed(0)}%;height:100%;background:var(--orange);border-radius:2px"></div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--orange)">${(ind.ratio * 100).toFixed(2)}%</div>
+    </div>
+  `).join('');
+}
+
+async function toggleWatch() {
+  const btn = document.getElementById('watchBtn');
+  const isWatched = btn.classList.contains('btn-primary');
+  
+  if (isWatched) {
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.textContent = '加自选';
+  } else {
+    btn.className = 'btn btn-primary btn-sm';
+    btn.textContent = '已自选';
+  }
+}
+
+async function analyzeFund() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.textContent = 'AI分析中...';
+  
+  let modal = document.getElementById('aiAnalysisModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'aiAnalysisModal';
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  modal.innerHTML = `
+    <div style="background:var(--surface-2);border-radius:16px;width:90%;max-width:700px;max-height:80vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="padding:20px;border-bottom:1px solid var(--border-1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:600">AI分析：${name} (${code})</div>
+        <button onclick="closeAnalysisModal()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:20px">✕</button>
+      </div>
+      <div id="analysisContent" style="padding:20px;max-height:60vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:center;padding:40px">
+          <div class="loading-spinner" style="width:32px;height:32px;margin-right:12px"></div>
+          <span style="color:var(--text-4)">AI正在分析中...</span>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  
+  try {
+    const resp = await safeFetch(`${API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: CONFIG.AI_API_TIMEOUT,
+      body: JSON.stringify({ 
+        code: code,
+        name: name,
+        type: 'fund'
+      })
+    });
+    
+    const result = await resp.json();
+    const content = document.getElementById('analysisContent');
+    
+    if (result.success && result.data) {
+      content.innerHTML = `<div style="line-height:1.8;color:var(--text-2);white-space:pre-wrap">${result.data.analysis || result.data}</div>`;
+    } else {
+      content.innerHTML = `<div style="text-align:center;color:var(--text-4)">分析失败，请稍后重试</div>`;
+    }
+  } catch (e) {
+    document.getElementById('analysisContent').innerHTML = `
+      <div style="text-align:center;color:var(--text-4)">
+        <div style="margin-bottom:8px">连接失败</div>
+        <div style="font-size:12px">请检查后端服务是否正常运行</div>
+      </div>
+    `;
+  }
+  
+  btn.disabled = false;
+  btn.textContent = 'AI分析';
+}
+
+function closeAnalysisModal() {
+  const modal = document.getElementById('aiAnalysisModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function initNavperiodButtons() {
+  document.querySelectorAll('.navperiod-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.navperiod-btn').forEach(b => b.classList.remove('navperiod-active'));
+      btn.classList.add('navperiod-active');
+      currentPeriod = btn.dataset.p;
+      drawNavChart();
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('breadName').textContent = name;
+  document.getElementById('fundName').textContent = name;
+  document.getElementById('chartTitle').textContent = name + ' 净值走势';
+  
+  loadFundDetail();
+  initNavperiodButtons();
+});
+</script>
+</body>
+</html>

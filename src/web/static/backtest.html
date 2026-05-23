@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回测 — QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html" class="active">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">策略回测</h1>
+      <p class="page-sub">验证你的交易策略，优化投资决策</p>
+    </div>
+    <button class="btn btn-primary" onclick="showCreateModal()">+ 新建策略</button>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:24px">
+    <div class="stat-card content-wrapper skeleton-hidden" data-stat="totalStrategies" id="statCard1">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="stat-label">策略总数</div>
+      <div class="stat-value" id="totalStrategies">Loading...</div>
+      <div class="stat-change">--</div>
+    </div>
+    <div class="stat-card content-wrapper skeleton-hidden" data-stat="runningCount" id="statCard2">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="stat-label">运行中</div>
+      <div class="stat-value text-green" id="runningCount">Loading...</div>
+      <div class="stat-change">--</div>
+    </div>
+    <div class="stat-card content-wrapper skeleton-hidden" data-stat="avgReturn" id="statCard3">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="stat-label">平均收益率</div>
+      <div class="stat-value" id="avgReturn">Loading...</div>
+      <div class="stat-change">--</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">策略列表</div>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>策略名称</th>
+          <th>类型</th>
+          <th>收益率</th>
+          <th>最大回撤</th>
+          <th>夏普比率</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="strategyTableBody">
+        <tr><td colspan="7" style="text-align:center;padding:40px">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 日线策略区域 -->
+  <div class="card" style="margin-top:24px">
+    <div class="row-between" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:0">日线策略回测</div>
+      <button class="btn btn-primary" id="runDailyBacktestBtn" onclick="runDailyBacktest()">运行回测</button>
+    </div>
+
+    <!-- 指标卡片 -->
+    <div class="grid-3" id="dailyMetrics" style="margin-bottom:24px">
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard1">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">年化收益率</div>
+        <div class="stat-value" id="dailyAnnualReturn">--</div>
+        <div class="stat-change" id="dailyReturnChange">--</div>
+      </div>
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard2">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">夏普比率</div>
+        <div class="stat-value" id="dailySharpe">--</div>
+        <div class="stat-change">目标 > 1.0</div>
+      </div>
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard3">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">最大回撤</div>
+        <div class="stat-value" id="dailyMaxDrawdown">--</div>
+        <div class="stat-change">目标 > -15%</div>
+      </div>
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard4">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">胜率</div>
+        <div class="stat-value" id="dailyWinRate">--</div>
+        <div class="stat-change" id="dailyWinRateChange">--</div>
+      </div>
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard5">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">盈亏比</div>
+        <div class="stat-value" id="dailyProfitFactor">--</div>
+        <div class="stat-change">目标 > 1.5</div>
+      </div>
+      <div class="stat-card content-wrapper skeleton-hidden" id="dailyCard6">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">年均交易次数</div>
+        <div class="stat-value" id="dailyAnnualTrades">--</div>
+        <div class="stat-change">--</div>
+      </div>
+    </div>
+
+    <!-- 收益曲线 -->
+    <div style="position:relative;height:350px">
+      <canvas id="dailyEquityChart"></canvas>
+    </div>
+    <div id="dailyChartPlaceholder" style="height:350px;display:flex;align-items:center;justify-content:center;color:var(--text-4)">
+      点击「运行回测」加载收益曲线
+    </div>
+  </div>
+
+  <!-- 日内五分钟线策略区域 -->
+  <div class="card" style="margin-top:24px">
+    <div class="row-between" style="margin-bottom:20px">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">日内五分钟线策略</div>
+        <div class="text-sm text-muted">5分钟K线 + 技术规则 + ML双重确认，日内T+0交易</div>
+      </div>
+      <div class="row gap-8">
+        <select class="input" id="intraSymbol" style="width:120px">
+          <option value="000001">000001 平安银行</option>
+          <option value="600036">600036 招商银行</option>
+          <option value="600519">600519 贵州茅台</option>
+          <option value="000858">000858 五粮液</option>
+        </select>
+        <input class="input" id="intraStartDate" type="date" value="2024-01-01" style="width:140px">
+        <input class="input" id="intraEndDate" type="date" value="2024-12-31" style="width:140px">
+        <button class="btn btn-primary" id="runIntraBtn" onclick="runIntradayBacktest()">运行回测</button>
+      </div>
+    </div>
+
+    <!-- 状态提示 -->
+    <div id="intraStatus" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
+
+    <!-- 指标卡片 -->
+    <div class="grid-3" style="margin-bottom:24px">
+      <div class="stat-card content-wrapper" id="intraCard1">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">总收益率</div>
+        <div class="stat-value" id="intraReturn">--</div>
+        <div class="stat-change" id="intraReturnSub">--</div>
+      </div>
+      <div class="stat-card content-wrapper" id="intraCard2">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">胜率</div>
+        <div class="stat-value" id="intraWinRate">--</div>
+        <div class="stat-change" id="intraWinRateSub">--</div>
+      </div>
+      <div class="stat-card content-wrapper" id="intraCard3">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">盈亏比</div>
+        <div class="stat-value" id="intraProfitFactor">--</div>
+        <div class="stat-change">目标 > 1.5</div>
+      </div>
+      <div class="stat-card content-wrapper" id="intraCard4">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">最大回撤</div>
+        <div class="stat-value" id="intraMaxDD">--</div>
+        <div class="stat-change">目标 > -5%</div>
+      </div>
+      <div class="stat-card content-wrapper" id="intraCard5">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">Sharpe</div>
+        <div class="stat-value" id="intraSharpe">--</div>
+        <div class="stat-change">目标 > 1.0</div>
+      </div>
+      <div class="stat-card content-wrapper" id="intraCard6">
+        <div class="pulse-dot"></div>
+        <div class="glow-line"></div>
+        <div class="stat-label">交易次数</div>
+        <div class="stat-value" id="intraTrades">--</div>
+        <div class="stat-change" id="intraTradesSub">--</div>
+      </div>
+    </div>
+
+    <!-- 收益曲线 -->
+    <div style="position:relative;height:300px">
+      <canvas id="intraEquityChart"></canvas>
+    </div>
+    <div id="intraChartPlaceholder" style="height:300px;display:flex;align-items:center;justify-content:center;color:var(--text-4)">
+      点击「运行回测」加载收益曲线
+    </div>
+
+    <!-- 交易记录 -->
+    <div id="intraTradesSection" style="display:none;margin-top:20px">
+      <div class="card-title" style="margin-bottom:12px">最近交易记录</div>
+      <div style="max-height:300px;overflow-y:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>股票</th>
+              <th>买入价</th>
+              <th>卖出价</th>
+              <th>盈亏</th>
+              <th>盈亏%</th>
+              <th>持仓K线数</th>
+              <th>出场原因</th>
+            </tr>
+          </thead>
+          <tbody id="intraTradeTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="createModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface-2);border-radius:16px;width:90%;max-width:500px;padding:24px">
+    <div style="font-size:18px;font-weight:600;margin-bottom:20px">新建回测策略</div>
+    <div style="margin-bottom:16px">
+      <label class="text-sm text-muted" style="display:block;margin-bottom:8px">策略名称</label>
+      <input class="input" id="strategyName" placeholder="输入策略名称" style="width:100%">
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="text-sm text-muted" style="display:block;margin-bottom:8px">策略类型</label>
+      <select class="input" id="strategyType" style="width:100%">
+        <option value="ma">均线策略</option>
+        <option value="macd">MACD策略</option>
+        <option value="rsi">RSI策略</option>
+        <option value="bollinger">布林带策略</option>
+        <option value="custom">自定义策略</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label class="text-sm text-muted" style="display:block;margin-bottom:8px">股票代码</label>
+      <input class="input" id="stockCode" placeholder="如：000001" style="width:100%">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div>
+        <label class="text-sm text-muted" style="display:block;margin-bottom:8px">开始日期</label>
+        <input class="input" id="startDate" type="date" style="width:100%">
+      </div>
+      <div>
+        <label class="text-sm text-muted" style="display:block;margin-bottom:8px">结束日期</label>
+        <input class="input" id="endDate" type="date" style="width:100%">
+      </div>
+    </div>
+    <div class="row gap-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="hideCreateModal()">取消</button>
+      <button class="btn btn-primary" onclick="createStrategy()">创建并运行</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+
+function showCreateModal() {
+  document.getElementById('createModal').style.display = 'flex';
+}
+
+function hideCreateModal() {
+  document.getElementById('createModal').style.display = 'none';
+}
+
+async function loadStrategies() {
+  const tbody = document.getElementById('strategyTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Loading...</td></tr>';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/list`);
+    
+    if (result && result.success && result.data) {
+      document.getElementById('totalStrategies').textContent = result.data.length;
+      
+      const running = result.data.filter(s => s.status === 'running').length;
+      document.getElementById('runningCount').textContent = running;
+      
+      const returns = result.data.filter(s => s.return_pct).map(s => s.return_pct);
+      if (returns.length > 0) {
+        const avg = returns.reduce((a, b) => a + b, 0) / returns.length;
+        document.getElementById('avgReturn').textContent = avg.toFixed(2) + '%';
+      }
+      
+      if (result.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">暂无策略，点击"新建策略"创建</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = result.data.map(s => `
+        <tr>
+          <td>
+            <div class="font-semibold">${s.name}</div>
+            <div class="text-xs text-muted">${s.code || '--'}</div>
+          </td>
+          <td><span class="badge">${s.type || '自定义'}</span></td>
+          <td class="font-mono ${s.return_pct >= 0 ? 'text-green' : 'text-red'}">${s.return_pct >= 0 ? '+' : ''}${s.return_pct ? s.return_pct.toFixed(2) : '--'}%</td>
+          <td class="font-mono ${s.max_drawdown <= -10 ? 'text-red' : ''}">${s.max_drawdown ? s.max_drawdown.toFixed(2) : '--'}%</td>
+          <td class="font-mono">${s.sharpe ? s.sharpe.toFixed(2) : '--'}</td>
+          <td>
+            <span class="badge ${s.status === 'completed' ? 'badge-green' : s.status === 'running' ? 'badge-orange' : 'badge-gray'}">
+              ${s.status === 'completed' ? '已完成' : s.status === 'running' ? '运行中' : '待运行'}
+            </span>
+          </td>
+          <td>
+            <div class="row gap-6">
+              <button class="btn btn-ghost btn-sm" onclick="viewResult(${s.id})">查看</button>
+              <button class="btn btn-ghost btn-sm" onclick="runBacktest(${s.id})">运行</button>
+              <button class="btn btn-ghost btn-sm text-red" onclick="deleteStrategy(${s.id})">删除</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">暂无数据，请启动后端服务</td></tr>';
+    document.getElementById('totalStrategies').textContent = '--';
+    document.getElementById('runningCount').textContent = '--';
+    document.getElementById('avgReturn').textContent = '--';
+  }
+}
+
+async function createStrategy() {
+  const name = document.getElementById('strategyName').value.trim();
+  const type = document.getElementById('strategyType').value;
+  const code = document.getElementById('stockCode').value.trim();
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  
+  if (!name || !code) {
+    alert('请填写策略名称和股票代码');
+    return;
+  }
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, type, code, start_date: startDate, end_date: endDate })
+    });
+    
+    if (result && result.success) {
+      hideCreateModal();
+      loadStrategies();
+      Utils.showToast('策略创建成功', 'success');
+    } else {
+      alert('创建失败：' + (result.error || '未知错误'));
+    }
+  } catch (e) {
+    Utils.showToast('创建失败，请检查网络连接', 'error');
+  }
+}
+
+async function runBacktest(id) {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/run/${id}`, { method: 'POST' });
+    if (result && result.success) {
+      alert('回测已启动');
+      loadStrategies();
+    } else {
+      Utils.showToast(result.error || '运行失败', 'error');
+    }
+  } catch (e) {
+    alert('运行失败');
+  }
+}
+
+function viewResult(id) {
+  window.location.href = `backtest-result.html?id=${id}`;
+}
+
+async function deleteStrategy(id) {
+  if (!confirm('确定要删除这个策略吗？')) return;
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/${id}`, { method: 'DELETE' });
+    if (result && result.success) {
+      loadStrategies();
+    } else {
+      Utils.showToast('删除失败', 'error');
+    }
+  } catch (e) {
+    Utils.showToast('删除失败', 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadStrategies();
+  loadDailyBacktest();
+  loadIntradayResult();
+});
+
+// ==================== 日线策略回测 ====================
+
+let dailyEquityChart = null;
+
+async function loadDailyBacktest() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/backtest/daily`);
+    
+    if (result && result.success && result.data) {
+      updateDailyMetrics(result.data);
+      renderEquityCurve(result.data.equity_curve || []);
+    }
+  } catch (e) {
+    // 首次加载无数据，显示占位
+    document.getElementById('dailyChartPlaceholder').style.display = 'flex';
+  }
+}
+
+async function runDailyBacktest() {
+  const btn = document.getElementById('runDailyBacktestBtn');
+  btn.disabled = true;
+  btn.textContent = '回测中...';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/backtest/daily`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    
+    if (result && result.success && result.data) {
+      updateDailyMetrics(result.data);
+      renderEquityCurve(result.data.equity_curve || []);
+      Utils.showToast('回测完成', 'success');
+    } else {
+      Utils.showToast(result.error || '回测失败', 'error');
+    }
+  } catch (e) {
+    Utils.showToast('回测失败，请检查后端服务', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '运行回测';
+  }
+}
+
+function updateDailyMetrics(data) {
+  // 年化收益率
+  const annualReturn = data.annual_return || 0;
+  const returnEl = document.getElementById('dailyAnnualReturn');
+  returnEl.textContent = (annualReturn >= 0 ? '+' : '') + (annualReturn * 100).toFixed(2) + '%';
+  returnEl.className = 'stat-value ' + (annualReturn >= 0 ? 'text-green' : 'text-red');
+  document.getElementById('dailyReturnChange').textContent = annualReturn >= 0 ? '↑ 跑赢基准' : '↓ 跑输基准';
+  document.getElementById('dailyReturnChange').className = 'stat-change ' + (annualReturn >= 0 ? 'text-green' : 'text-red');
+  
+  // 夏普比率
+  const sharpe = data.sharpe || 0;
+  const sharpeEl = document.getElementById('dailySharpe');
+  sharpeEl.textContent = sharpe.toFixed(2);
+  sharpeEl.className = 'stat-value ' + (sharpe >= 1 ? 'text-green' : sharpe >= 0.5 ? 'text-orange' : 'text-red');
+  
+  // 最大回撤
+  const maxDD = data.max_drawdown || 0;
+  const ddEl = document.getElementById('dailyMaxDrawdown');
+  ddEl.textContent = (maxDD * 100).toFixed(2) + '%';
+  ddEl.className = 'stat-value ' + (Math.abs(maxDD) < 0.15 ? 'text-green' : Math.abs(maxDD) < 0.25 ? 'text-orange' : 'text-red');
+  
+  // 胜率
+  const winRate = data.win_rate || 0;
+  document.getElementById('dailyWinRate').textContent = (winRate * 100).toFixed(1) + '%';
+  document.getElementById('dailyWinRateChange').textContent = winRate >= 0.5 ? '↑ 正向' : '↓ 负向';
+  document.getElementById('dailyWinRateChange').className = 'stat-change ' + (winRate >= 0.5 ? 'text-green' : 'text-red');
+  
+  // 盈亏比
+  const pf = data.profit_factor || 0;
+  const pfEl = document.getElementById('dailyProfitFactor');
+  pfEl.textContent = pf.toFixed(2);
+  pfEl.className = 'stat-value ' + (pf >= 1.5 ? 'text-green' : pf >= 1 ? 'text-orange' : 'text-red');
+  
+  // 年均交易次数
+  document.getElementById('dailyAnnualTrades').textContent = data.annual_trades || '--';
+  
+  // 显示指标卡片
+  for (let i = 1; i <= 6; i++) {
+    const card = document.getElementById('dailyCard' + i);
+    if (card) card.classList.remove('skeleton-hidden');
+  }
+  
+  // 隐藏占位
+  document.getElementById('dailyChartPlaceholder').style.display = 'none';
+}
+
+function renderEquityCurve(curveData) {
+  if (!curveData || curveData.length === 0) {
+    document.getElementById('dailyChartPlaceholder').style.display = 'flex';
+    return;
+  }
+  
+  document.getElementById('dailyChartPlaceholder').style.display = 'none';
+  
+  const labels = curveData.map(d => d[0]);
+  const values = curveData.map(d => d[1]);
+  
+  if (dailyEquityChart) {
+    dailyEquityChart.destroy();
+  }
+  
+  const ctx = document.getElementById('dailyEquityChart').getContext('2d');
+  
+  // 计算基准线（初始值）
+  const initialValue = values[0] || 100000;
+  const benchmark = Array(values.length).fill(initialValue);
+  
+  dailyEquityChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '策略收益',
+          data: values,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        },
+        {
+          label: '基准',
+          data: benchmark,
+          borderColor: 'rgba(148, 163, 184, 0.5)',
+          borderWidth: 1,
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0,
+          pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: '#94a3b8',
+            usePointStyle: true,
+            padding: 20,
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(148, 163, 184, 0.2)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: function(context) {
+              const val = context.parsed.y;
+              const change = ((val - initialValue) / initialValue * 100).toFixed(2);
+              return context.dataset.label + ': ¥' + val.toLocaleString() + ' (' + (change >= 0 ? '+' : '') + change + '%)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(148, 163, 184, 0.1)',
+          },
+          ticks: {
+            color: '#64748b',
+            maxTicksLimit: 10,
+            maxRotation: 0,
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(148, 163, 184, 0.1)',
+          },
+          ticks: {
+            color: '#64748b',
+            callback: function(value) {
+              return '¥' + (value / 1000).toFixed(0) + 'k';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ==================== 日内五分钟线策略回测 ====================
+
+let intraEquityChart = null;
+let intraPollTimer = null;
+
+async function runIntradayBacktest() {
+  const btn = document.getElementById('runIntraBtn');
+  const statusEl = document.getElementById('intraStatus');
+  btn.disabled = true;
+  btn.textContent = '回测中...';
+
+  statusEl.style.display = 'block';
+  statusEl.style.background = 'var(--orange-10)';
+  statusEl.style.color = 'var(--orange)';
+  statusEl.textContent = '正在加载数据并运行回测，请稍候...';
+
+  const symbol = document.getElementById('intraSymbol').value;
+  const start = document.getElementById('intraStartDate').value;
+  const end = document.getElementById('intraEndDate').value;
+
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/intraday/backtest`, {
+      method: 'POST',
+      body: JSON.stringify({ symbol, start, end, capital: 500000 })
+    });
+
+    if (result && result.success) {
+      statusEl.textContent = '回测已启动，正在计算中...';
+      pollIntradayStatus();
+    } else {
+      statusEl.style.background = 'var(--red-10)';
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = '启动失败: ' + (result.error || '未知错误');
+      btn.disabled = false;
+      btn.textContent = '运行回测';
+    }
+  } catch (e) {
+    statusEl.style.background = 'var(--red-10)';
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '请求失败，请检查后端服务';
+    btn.disabled = false;
+    btn.textContent = '运行回测';
+  }
+}
+
+function pollIntradayStatus() {
+  if (intraPollTimer) clearInterval(intraPollTimer);
+  intraPollTimer = setInterval(async () => {
+    try {
+      const result = await safeFetch(`${API_BASE}/api/strategy/intraday/status`);
+      if (result && result.success && result.data) {
+        const st = result.data;
+        if (!st.running) {
+          clearInterval(intraPollTimer);
+          intraPollTimer = null;
+          document.getElementById('runIntraBtn').disabled = false;
+          document.getElementById('runIntraBtn').textContent = '运行回测';
+
+          if (st.error) {
+            const statusEl = document.getElementById('intraStatus');
+            statusEl.style.background = 'var(--red-10)';
+            statusEl.style.color = 'var(--red)';
+            statusEl.textContent = '回测失败: ' + st.error;
+          } else if (st.last_result) {
+            updateIntradayMetrics(st.last_result);
+            loadIntradayTrades();
+            const statusEl = document.getElementById('intraStatus');
+            statusEl.style.background = 'var(--green-10)';
+            statusEl.style.color = 'var(--green)';
+            statusEl.textContent = '回测完成';
+            setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+          }
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }, 2000);
+}
+
+async function loadIntradayResult() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/intraday/result`);
+    if (result && result.success && result.data) {
+      updateIntradayMetrics(result.data);
+      loadIntradayTrades();
+    }
+  } catch (e) { /* no data yet */ }
+}
+
+function updateIntradayMetrics(data) {
+  const ret = data.total_return || 0;
+  const retEl = document.getElementById('intraReturn');
+  retEl.textContent = (ret >= 0 ? '+' : '') + (ret * 100).toFixed(2) + '%';
+  retEl.className = 'stat-value ' + (ret >= 0 ? 'text-green' : 'text-red');
+  document.getElementById('intraReturnSub').textContent =
+    `最终资金: ¥${(data.final_capital || 0).toLocaleString()}`;
+
+  const wr = data.win_rate || 0;
+  const wrEl = document.getElementById('intraWinRate');
+  wrEl.textContent = (wr * 100).toFixed(1) + '%';
+  wrEl.className = 'stat-value ' + (wr >= 0.5 ? 'text-green' : 'text-red');
+  document.getElementById('intraWinRateSub').textContent =
+    `平均盈利 ${(data.avg_win_pct * 100 || 0).toFixed(2)}% / 平均亏损 ${(data.avg_loss_pct * 100 || 0).toFixed(2)}%`;
+
+  const pf = data.profit_factor || 0;
+  const pfEl = document.getElementById('intraProfitFactor');
+  pfEl.textContent = pf === Infinity ? '∞' : pf.toFixed(2);
+  pfEl.className = 'stat-value ' + (pf >= 1.5 ? 'text-green' : pf >= 1 ? 'text-orange' : 'text-red');
+
+  const dd = data.max_drawdown || 0;
+  const ddEl = document.getElementById('intraMaxDD');
+  ddEl.textContent = (dd * 100).toFixed(2) + '%';
+  ddEl.className = 'stat-value ' + (Math.abs(dd) < 0.05 ? 'text-green' : Math.abs(dd) < 0.1 ? 'text-orange' : 'text-red');
+
+  const sh = data.sharpe || 0;
+  const shEl = document.getElementById('intraSharpe');
+  shEl.textContent = sh.toFixed(2);
+  shEl.className = 'stat-value ' + (sh >= 1 ? 'text-green' : sh >= 0.5 ? 'text-orange' : 'text-red');
+
+  document.getElementById('intraTrades').textContent = data.total_trades || 0;
+  const exits = data.exit_reasons || {};
+  const exitStr = Object.entries(exits).map(([k, v]) => `${k}:${v}`).join(' ');
+  document.getElementById('intraTradesSub').textContent = exitStr || '--';
+
+  if (data.equity_curve && data.equity_curve.length > 0) {
+    renderIntraEquityCurve(data.equity_curve);
+  }
+}
+
+function renderIntraEquityCurve(curveData) {
+  document.getElementById('intraChartPlaceholder').style.display = 'none';
+
+  if (intraEquityChart) intraEquityChart.destroy();
+
+  const labels = curveData.map((_, i) => i);
+  const values = curveData.map(v => typeof v === 'number' ? v : v[1] || v);
+  const initial = values[0] || 500000;
+  const benchmark = Array(values.length).fill(initial);
+
+  const ctx = document.getElementById('intraEquityChart').getContext('2d');
+  intraEquityChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '策略净值',
+          data: values,
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.08)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+        },
+        {
+          label: '初始资金',
+          data: benchmark,
+          borderColor: 'rgba(148,163,184,0.4)',
+          borderWidth: 1,
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#94a3b8', usePointStyle: true, padding: 16 } },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.9)',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(148,163,184,0.2)',
+          borderWidth: 1,
+          callbacks: {
+            label: function(ctx) {
+              const val = ctx.parsed.y;
+              const pct = ((val - initial) / initial * 100).toFixed(2);
+              return ctx.dataset.label + ': ¥' + val.toLocaleString() + ' (' + (pct >= 0 ? '+' : '') + pct + '%)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#64748b', maxTicksLimit: 10, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#64748b', callback: v => '¥' + (v / 1000).toFixed(0) + 'k' } }
+      }
+    }
+  });
+}
+
+async function loadIntradayTrades() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/strategy/intraday/trades`);
+    if (result && result.success && result.data && result.data.length > 0) {
+      document.getElementById('intraTradesSection').style.display = 'block';
+      const tbody = document.getElementById('intraTradeTable');
+      tbody.innerHTML = result.data.slice(0, 50).map(t => {
+        const pnl = parseFloat(t.pnl || 0);
+        const pnlPct = parseFloat(t.pnl_pct || 0);
+        return `<tr>
+          <td class="font-mono">${t.symbol || '--'}</td>
+          <td class="font-mono">${parseFloat(t.entry_price || 0).toFixed(2)}</td>
+          <td class="font-mono">${parseFloat(t.exit_price || 0).toFixed(2)}</td>
+          <td class="font-mono ${pnl >= 0 ? 'text-green' : 'text-red'}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(0)}</td>
+          <td class="font-mono ${pnlPct >= 0 ? 'text-green' : 'text-red'}">${pnlPct >= 0 ? '+' : ''}${(pnlPct * 100).toFixed(2)}%</td>
+          <td class="font-mono">${t.hold_bars || '--'}</td>
+          <td><span class="badge badge-gray">${t.reason || '--'}</span></td>
+        </tr>`;
+      }).join('');
+    }
+  } catch (e) { /* no trades */ }
+}
+</script>
+</body>
+</html>

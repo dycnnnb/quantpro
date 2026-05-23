@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 登录</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ==================== 登录页面美化样式 ==================== */
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* 登录卡片 - 玻璃态效果 + 渐变边框 */
+.login-box {
+  width: 100%; max-width: 420px;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, rgba(18,18,21,0.95) 0%, rgba(14,14,16,0.98) 100%);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  box-shadow: 
+    0 0 80px rgba(249,115,22,.08),
+    0 25px 50px -12px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: cardFadeIn 0.6s ease-out;
+}
+
+/* 卡片渐变边框效果 */
+.login-box::before {
+  content: '';
+  position: absolute; 
+  inset: 0;
+  border-radius: 20px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(249,115,22,0.4) 0%, transparent 50%, rgba(249,115,22,0.2) 100%);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* 卡片顶部渐变光条 */
+.login-box::after {
+  content: '';
+  position: absolute; 
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--orange) 50%, transparent 100%);
+  opacity: 0.8;
+}
+
+/* 卡片入场动画 */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Logo区域 */
+.login-logo {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-bottom: 12px;
+}
+
+/* Logo图标 - 发光效果增强 */
+.login-logo-icon {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dk) 100%);
+  border-radius: 14px;
+  display: grid; place-items: center;
+  font-size: 24px; font-weight: 800; color: #fff;
+  box-shadow: 
+    0 0 30px rgba(249,115,22,.4),
+    0 4px 15px rgba(249,115,22,.3);
+  position: relative;
+  animation: logoPulse 3s ease-in-out infinite;
+}
+
+/* Logo脉冲发光动画 */
+@keyframes logoPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(249,115,22,.4),
+      0 4px 15px rgba(249,115,22,.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px rgba(249,115,22,.5),
+      0 4px 20px rgba(249,115,22,.4);
+  }
+}
+
+.login-logo-text {
+  font-size: 26px; font-weight: 700; 
+  background: linear-gradient(135deg, #fff 30%, var(--orange-lt) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.login-sub {
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+  margin-bottom: 36px;
+}
+
+/* 表单字段 */
+.login-field {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 20px;
+}
+
+.login-field label {
+  font-size: 13px; font-weight: 500; color: var(--text-2);
+}
+
+/* 输入框 - 美化样式 */
+.login-input {
+  width: 100%; height: 48px;
+  padding: 0 16px;
+  background: linear-gradient(135deg, var(--surface-1) 0%, rgba(14,14,16,0.8) 100%);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  color: var(--text-1);
+  font-size: 14px;
+  font-family: var(--sans);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  position: relative;
+}
+
+.login-input:hover {
+  border-color: var(--border-3);
+  background: var(--surface-1);
+}
+
+.login-input:focus {
+  border-color: var(--orange);
+  box-shadow: 
+    0 0 0 3px rgba(249,115,22,.15),
+    0 0 20px rgba(249,115,22,.1);
+  background: var(--surface-1);
+}
+
+.login-input::placeholder {
+  color: var(--text-4);
+}
+
+/* 输入框焦点时的发光边框动画 */
+.login-input:focus {
+  animation: inputGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes inputGlow {
+  from {
+    box-shadow: 
+      0 0 0 3px rgba(249,115,22,.15),
+      0 0 20px rgba(249,115,22,.1);
+  }
+  to {
+    box-shadow: 
+      0 0 0 3px rgba(249,115,22,.2),
+      0 0 25px rgba(249,115,22,.15);
+  }
+}
+
+/* 选项区域 */
+.login-options {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 28px;
+}
+
+.login-remember {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-3); cursor: pointer;
+  transition: color 0.2s;
+}
+
+.login-remember:hover {
+  color: var(--text-2);
+}
+
+/* 自定义复选框 */
+.login-remember input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--orange);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.login-forgot {
+  font-size: 13px; color: var(--orange); cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.login-forgot::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--orange);
+  transition: width 0.3s ease;
+}
+
+.login-forgot:hover::after {
+  width: 100%;
+}
+
+.login-forgot:hover { 
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(249,115,22,.3);
+}
+
+/* 登录按钮 - 高级美化 */
+.login-btn {
+  width: 100%; height: 50px;
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dk) 100%);
+  border: none; 
+  border-radius: 12px;
+  color: #fff; 
+  font-size: 15px; 
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 20px rgba(249,115,22,.35),
+    0 0 0 0 rgba(249,115,22,0);
+}
+
+/* 按钮悬停效果 */
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 30px rgba(249,115,22,.45),
+    0 0 40px rgba(249,115,22,.2);
+}
+
+/* 按钮点击效果 */
+.login-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 2px 10px rgba(249,115,22,.3);
+}
+
+/* 按钮涟漪效果 */
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255,255,255,.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.login-btn:hover::before {
+  width: 300px;
+  height: 300px;
+  opacity: 0;
+}
+
+/* 按钮光泽扫过效果 */
+.login-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.login-btn:hover::after {
+  left: 100%;
+}
+
+.login-btn:disabled {
+  opacity: .6; 
+  cursor: not-allowed; 
+  transform: none;
+  box-shadow: 0 4px 15px rgba(249,115,22,.2);
+}
+
+/* 底部提示 */
+.login-footer {
+  text-align: center;
+  font-size: 13px; color: var(--text-3);
+}
+
+/* 错误提示 */
+.login-error {
+  display: none;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--red-10) 0%, rgba(239,68,68,.05) 100%);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: 12px;
+  color: var(--red);
+  font-size: 13px;
+  margin-bottom: 20px;
+  animation: errorShake 0.5s ease;
+}
+
+/* 错误提示抖动动画 */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* 浮动粒子背景 */
+.particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: var(--orange);
+  border-radius: 50%;
+  opacity: 0;
+  animation: float-up linear infinite;
+  filter: blur(0.5px);
+}
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(0) scale(0); }
+  10%  { opacity: .4; }
+  90%  { opacity: .1; }
+  100% { opacity: 0; transform: translateY(-100vh) scale(1); }
+}
+
+/* 背景装饰光晕 */
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(249,115,22,.05) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(249,115,22,.03) 0%, transparent 50%);
+  animation: bgRotate 30s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes bgRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+<script src="js/config.js"></script>
+
+<div class="particles" id="particles"></div>
+
+<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">Q</div>
+      <span class="login-logo-text">QuantPro</span>
+    </div>
+    <div class="login-sub">智能量化投资平台 · 登录您的账户</div>
+
+    <div class="login-error" id="loginError"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="login-field">
+        <label for="username">用户名 / 邮箱</label>
+        <input class="login-input" id="username" type="text" placeholder="请输入用户名" autocomplete="username" required>
+      </div>
+      <div class="login-field">
+        <label for="password">密码</label>
+        <input class="login-input" id="password" type="password" placeholder="请输入密码" autocomplete="current-password" required>
+      </div>
+
+      <div class="login-options">
+        <label class="login-remember">
+          <input type="checkbox" id="remember" checked> 记住登录
+        </label>
+        <span class="login-forgot">忘记密码?</span>
+      </div>
+
+      <button class="login-btn" type="submit" id="loginBtn">登 录</button>
+    </form>
+
+    <div class="login-divider" style="margin:24px 0;position:relative;text-align:center">
+      <span style="background:var(--surface-0);padding:0 16px;position:relative;z-index:1;color:var(--text-4);font-size:13px">或</span>
+      <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border-2);z-index:0"></div>
+    </div>
+
+    <form id="registerForm" onsubmit="handleRegister(event)" style="display:none">
+      <div class="login-field">
+        <label for="regUsername">用户名</label>
+        <input class="login-input" id="regUsername" type="text" placeholder="请输入用户名" required>
+      </div>
+      <div class="login-field">
+        <label for="regEmail">邮箱</label>
+        <input class="login-input" id="regEmail" type="email" placeholder="请输入邮箱" required>
+      </div>
+      <div class="login-field">
+        <label for="regPassword">密码</label>
+        <input class="login-input" id="regPassword" type="password" placeholder="请输入密码 (至少6位)" required minlength="6">
+      </div>
+      <div class="login-field">
+        <label for="regConfirmPassword">确认密码</label>
+        <input class="login-input" id="regConfirmPassword" type="password" placeholder="请再次输入密码" required>
+      </div>
+      <button class="login-btn" type="submit" id="registerBtn" style="background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);box-shadow:0 4px 20px rgba(34,197,94,.35)">创建账户</button>
+    </form>
+
+    <div class="login-footer" style="margin-top:24px">
+      <span id="switchText" class="text-sm text-muted">请登录您的账户</span>
+      <button id="switchBtn" class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="toggleForm()">创建新账户</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+
+// 测试模式：每次刷新都跳转到登录页
+const TEST_MODE = false;
+if (TEST_MODE) {
+  localStorage.removeItem('quantpro_token');
+} else if (localStorage.getItem('quantpro_token')) {
+  window.location.href = 'index.html';
+}
+
+let isLoginMode = true;
+
+function toggleForm() {
+  isLoginMode = !isLoginMode;
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const switchBtn = document.getElementById('switchBtn');
+  const switchText = document.getElementById('switchText');
+  const divider = document.querySelector('.login-divider');
+  
+  if (isLoginMode) {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+    divider.style.display = 'block';
+    switchBtn.textContent = '创建新账户';
+    switchText.textContent = '请登录您的账户';
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+    divider.style.display = 'none';
+    switchBtn.textContent = '返回登录';
+    switchText.textContent = '已有账户？点击下方返回登录';
+  }
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '验证配置...';
+
+  // 首先检查系统配置
+  fetch(API_BASE + '/api/config/check')
+    .then(r => r.json())
+    .then(config => {
+      // 检查关键组件
+      const criticalErrors = config.checks.filter(c => c.status === 'error');
+      const warnings = config.checks.filter(c => c.status === 'warning');
+      
+      // 如果有错误，显示配置问题弹窗
+      if (criticalErrors.length > 0) {
+        showConfigWarning(config);
+        btn.disabled = false;
+        btn.textContent = '登 录';
+        return;
+      }
+      
+      // 有警告时继续登录，但显示提示
+      if (warnings.length > 0) {
+        console.warn('系统配置警告:', warnings.map(w => w.message).join('; '));
+      }
+      
+      // 继续登录流程
+      btn.textContent = '登录中...';
+      return fetch(API_BASE + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+    })
+    .then(r => r ? r.json() : null)
+    .then(data => {
+      if (!data) return; // 配置检查失败时提前返回
+      
+      if (data.success) {
+        localStorage.setItem('quantpro_token', data.token);
+        localStorage.setItem('quantpro_user', JSON.stringify({
+          username: data.user.username,
+          name: data.user.name,
+          loginTime: new Date().toISOString()
+        }));
+        window.location.href = 'index.html';
+      } else {
+        showError(data.error || '用户名或密码错误');
+      }
+    })
+    .catch((err) => {
+      // 后端不可用时使用本地验证
+      localLogin(username, password);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '登 录';
+    });
+}
+
+// 显示配置警告弹窗
+function showConfigWarning(config) {
+  const existing = document.querySelector('.config-modal-overlay');
+  if (existing) existing.remove();
+  
+  const modal = document.createElement('div');
+  modal.className = 'config-modal-overlay';
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.8); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; animation: fadeIn 0.2s ease;
+  `;
+  
+  const errorItems = config.checks.filter(c => c.status === 'error');
+  const warningItems = config.checks.filter(c => c.status === 'warning');
+  
+  modal.innerHTML = `
+    <div style="
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      border-radius: 16px; padding: 24px; width: 480px; max-width: 90vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    ">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <h3 style="margin:0;font-size:18px;color:var(--red)">系统配置异常</h3>
+          <p style="margin:4px 0 0;font-size:13px;color:var(--text-3)">检测到以下问题需要处理</p>
+        </div>
+        <button onclick="this.closest('.config-modal-overlay').remove()" style="
+          background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;
+        ">×</button>
+      </div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto">
+        ${errorItems.map(c => `
+          <div style="
+            padding:14px 16px;background:rgba(239,68,68,.1);
+            border-radius:10px;border-left:3px solid var(--red);
+          ">
+            <div style="font-weight:600;color:var(--red);font-size:14px">${c.name}</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:4px">${c.message}</div>
+          </div>
+        `).join('')}
+        ${warningItems.map(c => `
+          <div style="
+            padding:14px 16px;background:rgba(249,115,22,.1);
+            border-radius:10px;border-left:3px solid var(--orange);
+          ">
+            <div style="font-weight:600;color:var(--orange);font-size:14px">${c.name}</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:4px">${c.message}</div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="margin-top:20px;padding:16px;background:var(--surface-1);border-radius:10px">
+        <div style="font-size:13px;color:var(--text-2)">
+          <strong>建议操作：</strong>
+        </div>
+        <ul style="margin:8px 0 0;padding-left:20px;font-size:12px;color:var(--text-3)">
+          <li>检查后端服务是否正常运行</li>
+          <li>确认数据库文件存在且有读写权限</li>
+          <li>查看后端日志了解详细错误信息</li>
+        </ul>
+      </div>
+      
+      <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="this.closest('.config-modal-overlay').remove()">
+          关闭
+        </button>
+        <button class="btn btn-primary" onclick="retryConfigCheck()">
+          重新检测
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// 重新检测配置
+function retryConfigCheck() {
+  const modal = document.querySelector('.config-modal-overlay');
+  if (modal) modal.remove();
+  
+  // 触发登录按钮点击
+  document.getElementById('loginBtn').click();
+}
+
+function localLogin(username, password) {
+  showError('后端服务不可用，请检查服务是否启动');
+  document.getElementById('password').value = '';
+}
+
+function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('registerBtn');
+  const username = document.getElementById('regUsername').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+  if (password !== confirmPassword) {
+    showError('两次输入的密码不一致');
+    return;
+  }
+
+  if (password.length < 6) {
+    showError('密码长度至少6位');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '创建中...';
+
+  fetch(API_BASE + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showSuccess('账户创建成功！请登录');
+      toggleForm();
+      document.getElementById('username').value = username;
+      document.getElementById('password').focus();
+    } else {
+      showError(data.error || '注册失败，请重试');
+    }
+  })
+  .catch(() => {
+    localRegister(username, email, password);
+  })
+  .finally(() => {
+    btn.disabled = false;
+    btn.textContent = '创建账户';
+  });
+}
+
+function localRegister(username, email, password) {
+  showError('后端服务不可用，无法注册');
+}
+
+function showSuccess(msg) {
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  errEl.style.background = 'rgba(34,197,94,.1)';
+  errEl.style.borderColor = 'rgba(34,197,94,.3)';
+  errEl.style.color = '#22c55e';
+}
+
+function showError(msg) {
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  errEl.style.background = 'var(--red-10)';
+  errEl.style.borderColor = 'rgba(239,68,68,.2)';
+  errEl.style.color = 'var(--red)';
+}
+
+// 粒子效果
+(function() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (6 + Math.random() * 8) + 's';
+    p.style.animationDelay = Math.random() * 10 + 's';
+    p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+    container.appendChild(p);
+  }
+})();
+
+// 回车提交
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginForm').requestSubmit();
+});
+</script>
+</body>
+</html>

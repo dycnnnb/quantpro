@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 模型监控</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.pulse-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.pulse-dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.pulse-dot.inactive{background:var(--text-4)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.action-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:.3px}
+.action-badge.buy{background:var(--green-10);color:var(--green)}
+.action-badge.sell{background:var(--red-10);color:var(--red)}
+.action-badge.hold{background:rgba(161,161,170,.1);color:var(--text-3)}
+.action-badge.strong_buy{background:rgba(34,197,94,.2);color:#4ade80}
+.action-badge.strong_sell{background:rgba(239,68,68,.2);color:#f87171}
+.score-bar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;flex:1}
+.score-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.score-bar-fill.positive{background:linear-gradient(90deg,var(--green),#4ade80)}
+.score-bar-fill.negative{background:linear-gradient(90deg,#f87171,var(--red))}
+.risk-indicator{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid var(--border-1)}
+.risk-indicator.safe{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.05)}
+.risk-indicator.warning{border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.05)}
+.risk-indicator.danger{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.05)}
+.monitor-grid{display:grid;gap:16px}
+.monitor-grid.g4{grid-template-columns:repeat(4,1fr)}
+.monitor-grid.g3{grid-template-columns:repeat(3,1fr)}
+.monitor-grid.g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1200px){.monitor-grid.g4{grid-template-columns:repeat(2,1fr)}.monitor-grid.g3{grid-template-columns:1fr}}
+@media(max-width:768px){.monitor-grid.g4,.monitor-grid.g2{grid-template-columns:1fr}}
+.decision-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;border:1px solid var(--border-1);background:var(--surface-1);transition:border-color .2s}
+.decision-row:hover{border-color:var(--border-3)}
+.cycle-timer{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--orange);letter-spacing:1px}
+.pipeline-step{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid var(--border-1);background:var(--surface-1);transition:all .3s}
+.pipeline-step.active{border-color:var(--orange);background:var(--orange-10);box-shadow:0 0 12px rgba(249,115,22,.1)}
+.pipeline-step.done{border-color:var(--green);background:rgba(34,197,94,.05)}
+.pipeline-step-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.pipeline-step.active .pipeline-step-icon{background:var(--orange);color:#fff}
+.pipeline-step.done .pipeline-step-icon{background:var(--green);color:#fff}
+.pipeline-step:not(.active):not(.done) .pipeline-step-icon{background:var(--surface-3);color:var(--text-4)}
+.pipeline-connector{width:2px;height:20px;background:var(--border-2);margin:0 auto}
+.pipeline-connector.done{background:var(--green)}
+.log-entry{padding:6px 12px;border-radius:6px;font-size:12px;font-family:var(--mono);border-left:3px solid var(--border-2);background:var(--surface-1);margin-bottom:4px}
+.log-entry.info{border-left-color:var(--text-3)}
+.log-entry.warning{border-left-color:var(--orange)}
+.log-entry.error{border-left-color:var(--red)}
+.tab-bar{display:flex;gap:4px;padding:4px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)}
+.tab-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-3);transition:all .2s}
+.tab-btn.active{background:var(--orange-10);color:var(--orange);border-color:rgba(249,115,22,.2)}
+.tab-btn:hover:not(.active){color:var(--text-2)}
+</style>
+</head>
+<body>
+<script src="js/config.js?v=20260310a"></script>
+<script src="js/utils.js?v=20260310a"></script>
+<script src="js/storage.js?v=20260310a"></script>
+<script src="js/api.js?v=20260310a"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html" class="active">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">模型实时监控</h1>
+      <p class="page-sub" id="pageSub">量化模型决策中心 · 实时追踪</p>
+    </div>
+    <div class="row gap-8">
+      <span id="proxyStatusBadge" class="badge badge-gray"><span class="pulse-dot inactive"></span>未启动</span>
+      <span id="marketInfoBadge" style="font-size:11px;color:var(--text-3);background:var(--surface-1);padding:2px 8px;border-radius:4px">检测中...</span>
+      <span id="modelInfoBadge" style="font-size:11px;color:var(--text-3);background:var(--surface-1);padding:2px 8px;border-radius:4px">检测中...</span>
+      <button class="btn btn-primary btn-sm" id="toggleMonitorBtn" onclick="toggleMonitor()">启动监控</button>
+      <button class="btn btn-ghost btn-sm" onclick="manualTrigger()">手动触发</button>
+    </div>
+  </div>
+
+  <div class="monitor-grid g4" style="margin-bottom:20px" id="overviewCards">
+    <div class="stat-card content-wrapper">
+      <div class="stat-label">总资产</div>
+      <div class="stat-value font-mono-num" id="totalAssets">--</div>
+      <div class="stat-change" id="totalPnl">--</div>
+    </div>
+    <div class="stat-card content-wrapper">
+      <div class="stat-label">持仓市值</div>
+      <div class="stat-value font-mono-num" id="positionValue">--</div>
+      <div class="stat-change" id="positionCount">--</div>
+    </div>
+    <div class="stat-card content-wrapper">
+      <div class="stat-label">可用现金</div>
+      <div class="stat-value font-mono-num" id="cashValue">--</div>
+      <div class="stat-change" id="cashRatio">--</div>
+    </div>
+    <div class="stat-card content-wrapper">
+      <div class="stat-label">监控周期</div>
+      <div class="cycle-timer" id="cycleTimer">--:--</div>
+      <div class="stat-change" id="lastDecision">--</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="card-title">量化流水线</div>
+      <div class="row gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="triggerStage('news_crawl')">抓取新闻</button>
+        <button class="btn btn-ghost btn-sm" onclick="triggerStage('daily_pick')">执行选股</button>
+        <button class="btn btn-ghost btn-sm" onclick="runPickWithMode('morning',false)" style="font-size:11px">清晨选股</button>
+        <button class="btn btn-ghost btn-sm" onclick="runPickWithMode('midday',false)" style="font-size:11px">日中选股</button>
+        <button class="btn btn-ghost btn-sm" onclick="triggerStage('intraday')">日内决策</button>
+        <button class="btn btn-ghost btn-sm" onclick="triggerStage('market_close')">收市总结</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:stretch;overflow-x:auto;padding-bottom:8px" id="pipelineSteps">
+      <div class="pipeline-step" id="step-precheck"><div class="pipeline-step-icon">1</div><div><div style="font-size:13px;font-weight:600">环境预检</div><div style="font-size:11px;color:var(--text-4)" id="step-precheck-detail">等待启动</div></div></div>
+      <div style="display:flex;align-items:center"><div style="width:24px;height:2px;background:var(--border-2)" id="conn-1"></div></div>
+      <div class="pipeline-step" id="step-news_crawl"><div class="pipeline-step-icon">2</div><div><div style="font-size:13px;font-weight:600">新闻爬取</div><div style="font-size:11px;color:var(--text-4)" id="step-news_crawl-detail">等待启动</div></div></div>
+      <div style="display:flex;align-items:center"><div style="width:24px;height:2px;background:var(--border-2)" id="conn-2"></div></div>
+      <div class="pipeline-step" id="step-daily_pick"><div class="pipeline-step-icon">3</div><div><div style="font-size:13px;font-weight:600">每日选股</div><div style="font-size:11px;color:var(--text-4)" id="step-daily_pick-detail">等待启动</div></div></div>
+      <div style="display:flex;align-items:center"><div style="width:24px;height:2px;background:var(--border-2)" id="conn-3"></div></div>
+      <div class="pipeline-step" id="step-intraday_loop"><div class="pipeline-step-icon">4</div><div><div style="font-size:13px;font-weight:600">日内策略</div><div style="font-size:11px;color:var(--text-4)" id="step-intraday_loop-detail">等待启动</div></div></div>
+      <div style="display:flex;align-items:center"><div style="width:24px;height:2px;background:var(--border-2)" id="conn-4"></div></div>
+      <div class="pipeline-step" id="step-market_close"><div class="pipeline-step-icon">5</div><div><div style="font-size:13px;font-weight:600">收市总结</div><div style="font-size:11px;color:var(--text-4)" id="step-market_close-detail">等待启动</div></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:12px">
+      <div>
+        <div class="card-title">执行模式</div>
+        <div class="text-sm text-muted" style="margin-top:2px">策略决策如何路由到交易系统</div>
+      </div>
+      <span class="badge badge-gray" id="execModeBadge">模拟盘</span>
+    </div>
+    <div class="row gap-10">
+      <button class="btn btn-primary btn-sm" id="btnExecPaper" onclick="setExecMode('paper')">模拟盘</button>
+      <button class="btn btn-ghost btn-sm" id="btnExecDryRun" onclick="setExecMode('real',true)">实盘(演练)</button>
+      <button class="btn btn-ghost btn-sm" id="btnExecReal" onclick="setExecMode('real',false)">实盘(真实)</button>
+      <button class="btn btn-ghost btn-sm" id="btnExecBoth" onclick="setExecMode('both',false)">模拟+实盘</button>
+    </div>
+    <div id="execModeInfo" style="margin-top:8px;font-size:12px;color:var(--text-4)"></div>
+  </div>
+
+  <div class="monitor-grid g2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="row-between" style="margin-bottom:16px">
+        <div class="card-title">模型决策 — 下一步行动</div>
+        <span class="badge badge-gray" id="tradingTimeBadge">--</span>
+      </div>
+      <div id="nextActionsContainer" style="display:flex;flex-direction:column;gap:8px">
+        <div style="text-align:center;padding:30px;color:var(--text-4)">加载中...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row-between" style="margin-bottom:16px">
+        <div class="card-title">风控面板</div>
+        <span class="badge badge-gray" id="riskBadge">--</span>
+      </div>
+      <div id="riskContainer" style="display:flex;flex-direction:column;gap:8px">
+        <div style="text-align:center;padding:30px;color:var(--text-4)">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="card-title">实时持仓监控</div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchPositionTab('list',this)">列表</button>
+        <button class="tab-btn" onclick="switchPositionTab('pnl',this)">盈亏分布</button>
+      </div>
+    </div>
+    <div id="positionListTab">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border-2)">
+            <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">代码</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">持仓</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">成本</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">现价</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">市值</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">盈亏</th>
+            <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">盈亏%</th>
+            <th style="text-align:center;padding:10px 12px;font-size:12px;color:var(--text-3);font-weight:500">止损</th>
+          </tr>
+        </thead>
+        <tbody id="positionTableBody">
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-4)">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="positionPnlTab" style="display:none">
+      <div id="pnlDistribution" style="display:flex;flex-direction:column;gap:8px;padding:10px 0"></div>
+    </div>
+  </div>
+
+  <div class="monitor-grid g2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="row-between" style="margin-bottom:16px">
+        <div class="card-title">决策历史</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadDecisionHistory()">刷新</button>
+      </div>
+      <div id="decisionHistoryContainer" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+        <div style="text-align:center;padding:30px;color:var(--text-4)">暂无决策记录</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row-between" style="margin-bottom:16px">
+        <div class="card-title">流水线日志</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadPipelineLog()">刷新</button>
+      </div>
+      <div id="autoAnalysisContainer" style="max-height:400px;overflow-y:auto">
+        <div style="text-align:center;padding:30px;color:var(--text-4)">暂无流水线日志</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="card-title">监控配置</div>
+    </div>
+    <div class="monitor-grid g3">
+      <div class="content-wrapper" style="padding:16px">
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">决策周期（秒）</div>
+        <div class="row gap-8">
+          <input type="number" id="cycleInterval" value="300" min="60" max="3600" style="flex:1;padding:8px 12px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:8px;color:var(--text-1);font-family:var(--mono)">
+          <button class="btn btn-ghost btn-sm" onclick="updateInterval()">应用</button>
+        </div>
+      </div>
+      <div class="content-wrapper" style="padding:16px">
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">自动交易</div>
+        <div class="row gap-8 align-center">
+          <span id="autoTradeStatus" style="font-size:13px;color:var(--text-3)">未启用</span>
+          <button class="btn btn-ghost btn-sm" id="autoTradeBtn" onclick="toggleAutoTrade()">启用</button>
+        </div>
+      </div>
+      <div class="content-wrapper" style="padding:16px">
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">数据刷新</div>
+        <div class="row gap-8 align-center">
+          <span style="font-size:13px;color:var(--text-3)">每5秒自动刷新</span>
+          <button class="btn btn-ghost btn-sm" onclick="refreshAll()">立即刷新</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) || window.location.origin;
+let monitorRunning = false;
+let refreshTimer = null;
+let countdownTimer = null;
+let countdown = 0;
+
+async function safeFetch(url, options = {}) {
+  try {
+    const resp = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options
+    });
+    return await resp.json();
+  } catch (e) {
+    console.error('Fetch error:', url, e);
+    return null;
+  }
+}
+
+function formatMoney(v) {
+  if (!v && v !== 0) return '--';
+  if (Math.abs(v) >= 1e8) return (v / 1e8).toFixed(2) + '亿';
+  if (Math.abs(v) >= 1e4) return (v / 1e4).toFixed(1) + '万';
+  return v.toFixed(2);
+}
+
+function formatPnl(v) {
+  if (!v && v !== 0) return '--';
+  const sign = v >= 0 ? '+' : '';
+  return sign + v.toFixed(2);
+}
+
+function formatPnlPct(v) {
+  if (!v && v !== 0) return '--';
+  const sign = v >= 0 ? '+' : '';
+  return sign + v.toFixed(2) + '%';
+}
+
+function pnlClass(v) {
+  return v > 0 ? 'text-green' : v < 0 ? 'text-red' : 'text-muted';
+}
+
+function actionBadge(action) {
+  const labels = { strong_buy: '强烈买入', buy: '买入', hold: '持有', sell: '卖出', strong_sell: '强烈卖出' };
+  return `<span class="action-badge ${action}">${labels[action] || action}</span>`;
+}
+
+async function toggleMonitor() {
+  const btn = document.getElementById('toggleMonitorBtn');
+  if (monitorRunning) {
+    const r = await safeFetch(`${API_BASE}/api/monitor/stop`, { method: 'POST' });
+    if (r && r.success) {
+      monitorRunning = false;
+      btn.textContent = '启动监控';
+      btn.className = 'btn btn-primary btn-sm';
+      stopRefresh();
+    }
+  } else {
+    const interval = parseInt(document.getElementById('cycleInterval').value) || 300;
+    const r = await safeFetch(`${API_BASE}/api/monitor/start`, {
+      method: 'POST',
+      body: JSON.stringify({ interval })
+    });
+    if (r && r.success) {
+      monitorRunning = true;
+      btn.textContent = '停止监控';
+      btn.className = 'btn btn-ghost btn-sm';
+      startRefresh();
+    } else {
+      Utils.showToast(r?.error || '启动失败', 'error');
+    }
+  }
+  updateProxyBadge();
+}
+
+async function manualTrigger() {
+  Utils.showToast('正在触发决策周期...', 'info');
+  const r = await safeFetch(`${API_BASE}/api/monitor/trigger`, { method: 'POST' });
+  if (r && r.success) {
+    Utils.showToast('决策周期已执行', 'success');
+    refreshAll();
+  } else {
+    Utils.showToast(r?.error || '触发失败', 'error');
+  }
+}
+
+async function setExecMode(mode, dryRun) {
+  const r = await safeFetch(`${API_BASE}/api/executor/mode`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, dry_run: dryRun }),
+  });
+  if (r && r.success) {
+    refreshExecMode();
+    const label = mode === 'paper' ? '模拟盘' : mode === 'real' && dryRun ? '实盘(演练)' : mode === 'real' ? '实盘(真实)' : '模拟+实盘';
+    Utils.showToast('已切换为: ' + label, 'success');
+  } else {
+    Utils.showToast(r?.error || '切换失败', 'error');
+  }
+}
+
+async function refreshExecMode() {
+  const r = await safeFetch(`${API_BASE}/api/executor/status`);
+  if (r && r.success && r.data) {
+    const d = r.data;
+    const badge = document.getElementById('execModeBadge');
+    const info = document.getElementById('execModeInfo');
+    const labels = { paper: '模拟盘', real: '实盘', both: '模拟+实盘' };
+    const colors = { paper: 'badge-gray', real: 'badge-orange', both: 'badge-green' };
+    badge.textContent = labels[d.mode] || d.mode;
+    if (d.dry_run && d.mode !== 'paper') badge.textContent += '(演练)';
+    badge.className = 'badge ' + (colors[d.mode] || 'badge-gray');
+
+    const btns = { paper: 'btnExecPaper', real: d.dry_run ? 'btnExecDryRun' : 'btnExecReal', both: 'btnExecBoth' };
+    document.querySelectorAll('#btnExecPaper,#btnExecDryRun,#btnExecReal,#btnExecBoth').forEach(b => b.className = 'btn btn-ghost btn-sm');
+    const activeId = btns[d.mode];
+    if (activeId) document.getElementById(activeId).className = 'btn btn-primary btn-sm';
+
+    const parts = [];
+    if (d.mode === 'paper' || d.mode === 'both') parts.push('决策 -> PositionManager(模拟)');
+    if (d.mode === 'real' || d.mode === 'both') parts.push('决策 -> THSTrader(实盘' + (d.dry_run ? '演练' : '真实') + ')');
+    if (d.real_connected) parts.push('同花顺: 已连接');
+    info.textContent = parts.join(' | ');
+  }
+}
+
+function startRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshAll();
+  refreshExecMode();
+  refreshTimer = setInterval(refreshAll, 5000);
+  startCountdown();
+}
+
+function stopRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+
+function startCountdown() {
+  const interval = parseInt(document.getElementById('cycleInterval').value) || 300;
+  countdown = interval;
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) countdown = interval;
+    const m = Math.floor(countdown / 60);
+    const s = countdown % 60;
+    document.getElementById('cycleTimer').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+async function triggerStage(stage) {
+  if (stage === 'daily_pick') {
+    showPickConfirmDialog();
+    return;
+  }
+  Utils.showToast(`正在触发: ${stage}...`, 'info');
+  const r = await safeFetch(`${API_BASE}/api/monitor/trigger`, {
+    method: 'POST',
+    body: JSON.stringify({ stage })
+  });
+  if (r && r.success) {
+    Utils.showToast(`${stage} 已触发`, 'success');
+    refreshAll();
+  } else {
+    Utils.showToast(r?.error || '触发失败', 'error');
+  }
+}
+
+async function showPickConfirmDialog() {
+  const checkR = await safeFetch(`${API_BASE}/api/monitor/picks_check`);
+  if (!checkR || !checkR.success) {
+    Utils.showToast('选股检测失败', 'error');
+    return;
+  }
+  const ps = checkR.data;
+  const marketR = await safeFetch(`${API_BASE}/api/monitor/next_action`);
+  const ms = marketR?.data?.market_status || {};
+
+  if (!ms.is_trading_day) {
+    Utils.showToast(`今日休市: ${ms.reason}，无需选股`, 'warning');
+    return;
+  }
+
+  let modal = document.getElementById('pickConfirmModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'pickConfirmModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(modal);
+  }
+
+  const statusHtml = ps.needs_pick
+    ? `<div style="padding:10px 14px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;font-size:13px;color:var(--orange);margin-bottom:16px">[!] ${ps.reason}，建议执行选股</div>`
+    : `<div style="padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;font-size:13px;color:var(--green);margin-bottom:16px">[OK] ${ps.reason}（${ps.pick_count}只）</div>`;
+
+  const suggestedMode = ps.suggested_mode || 'morning';
+  const now = new Date();
+  const hour = now.getHours();
+  const defaultMode = hour < 12 ? 'morning' : 'midday';
+
+  modal.innerHTML = `
+    <div style="background:var(--surface-2);border-radius:16px;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="padding:20px;border-bottom:1px solid var(--border-1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:600">选股确认</div>
+        <button onclick="closePickModal()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:20px">X</button>
+      </div>
+      <div style="padding:20px">
+        ${statusHtml}
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">选择选股模式</div>
+        <div style="display:flex;gap:12px;margin-bottom:20px">
+          <label style="flex:1;padding:14px;border:2px solid ${defaultMode === 'morning' ? 'var(--orange)' : 'var(--border-1)'};border-radius:10px;cursor:pointer;text-align:center" id="pickModeMorning" onclick="selectPickMode('morning')">
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px">清晨选股</div>
+            <div style="font-size:12px;color:var(--text-3)">盘前执行，模型权重60%</div>
+            <div style="font-size:11px;color:var(--text-4);margin-top:4px">适合开盘前决策</div>
+          </label>
+          <label style="flex:1;padding:14px;border:2px solid ${defaultMode === 'midday' ? 'var(--orange)' : 'var(--border-1)'};border-radius:10px;cursor:pointer;text-align:center" id="pickModeMidday" onclick="selectPickMode('midday')">
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px">日中选股</div>
+            <div style="font-size:12px;color:var(--text-3)">午间执行，模型+新闻各50%</div>
+            <div style="font-size:11px;color:var(--text-4);margin-top:4px">结合盘中新闻调整</div>
+          </label>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="closePickModal()">取消</button>
+          ${!ps.needs_pick ? `<button class="btn btn-ghost btn-sm" style="color:var(--orange)" onclick="runPickWithMode(selectedPickMode, true)">强制重新选股</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="runPickWithMode(selectedPickMode, false)">确认选股</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  window.selectedPickMode = defaultMode;
+}
+
+function selectPickMode(mode) {
+  window.selectedPickMode = mode;
+  const mEl = document.getElementById('pickModeMorning');
+  const dEl = document.getElementById('pickModeMidday');
+  if (mEl) mEl.style.borderColor = mode === 'morning' ? 'var(--orange)' : 'var(--border-1)';
+  if (dEl) dEl.style.borderColor = mode === 'midday' ? 'var(--orange)' : 'var(--border-1)';
+}
+
+function closePickModal() {
+  const modal = document.getElementById('pickConfirmModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function runPickWithMode(mode, force) {
+  closePickModal();
+  const modeLabel = mode === 'morning' ? '清晨选股' : '日中选股';
+  Utils.showToast(`正在执行${modeLabel}...`, 'info');
+  const r = await safeFetch(`${API_BASE}/api/monitor/picks_run`, {
+    method: 'POST',
+    body: JSON.stringify({ mode, force })
+  });
+  if (r && r.success) {
+    Utils.showToast(`${modeLabel}已启动`, 'success');
+    refreshAll();
+  } else {
+    Utils.showToast(r?.message || '选股失败', 'warning');
+  }
+}
+
+
+function updatePipelineUI(monitorData) {
+  const stageOrder = ['precheck', 'news_crawl', 'daily_pick', 'intraday_loop', 'market_close'];
+  const currentStage = monitorData.stage || 'idle';
+  const currentIdx = stageOrder.indexOf(currentStage);
+
+  stageOrder.forEach((stage, idx) => {
+    const el = document.getElementById(`step-${stage}`);
+    const detail = document.getElementById(`step-${stage}-detail`);
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    if (idx < currentIdx) {
+      el.classList.add('done');
+      detail.textContent = '已完成';
+    } else if (idx === currentIdx) {
+      el.classList.add('active');
+      detail.textContent = '执行中...';
+    } else {
+      detail.textContent = '等待中';
+    }
+  });
+
+  for (let i = 1; i <= 4; i++) {
+    const conn = document.getElementById(`conn-${i}`);
+    if (conn) {
+      conn.style.background = i <= currentIdx ? 'var(--green)' : 'var(--border-2)';
+    }
+  }
+
+  if (monitorData.last_news_crawl) {
+    const d = document.getElementById('step-news_crawl-detail');
+    if (d && currentIdx > 0) d.textContent = `上次: ${monitorData.last_news_crawl.substring(11, 19)}`;
+  }
+  if (monitorData.last_daily_pick) {
+    const d = document.getElementById('step-daily_pick-detail');
+    if (d && currentIdx > 1) d.textContent = `上次: ${monitorData.last_daily_pick.substring(11, 19)}`;
+  }
+  if (monitorData.last_intraday_cycle) {
+    const d = document.getElementById('step-intraday_loop-detail');
+    if (d && currentIdx > 2) d.textContent = `第${monitorData.intraday_cycle_count || 0}轮`;
+  }
+}
+
+
+async function loadPipelineLog() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/pipeline_log?limit=30`);
+  const container = document.getElementById('autoAnalysisContainer');
+  if (!r || !r.success || !r.data || r.data.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-4)">暂无流水线日志</div>';
+    return;
+  }
+  container.innerHTML = r.data.reverse().map(log => {
+    const time = log.time ? log.time.substring(11, 19) : '--';
+    const stageLabels = {precheck:'预检',news_crawl:'新闻',daily_pick:'选股',intraday_loop:'日内',market_close:'收市',error:'错误'};
+    return `<div class="log-entry ${log.level || 'info'}"><span style="color:var(--text-4)">${time}</span> <span style="color:var(--orange);font-weight:600">[${stageLabels[log.stage] || log.stage}]</span> ${log.message}</div>`;
+  }).join('');
+}
+
+
+async function updateProxyBadge() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/status`);
+  const badge = document.getElementById('proxyStatusBadge');
+  if (r && r.success) {
+    const ms = r.data.market || {};
+    const mdl = r.data.model || {};
+    const marketInfo = document.getElementById('marketInfoBadge');
+    if (marketInfo) {
+      if (!ms.is_trading_day) {
+        marketInfo.innerHTML = `[X] ${ms.reason}`;
+        marketInfo.style.cssText = 'font-size:11px;color:var(--red);background:rgba(239,68,68,.1);padding:2px 8px;border-radius:4px;margin-left:8px';
+      } else if (ms.is_market_open) {
+        marketInfo.innerHTML = `* ${ms.reason}`;
+        marketInfo.style.cssText = 'font-size:11px;color:var(--green);background:rgba(34,197,94,.1);padding:2px 8px;border-radius:4px;margin-left:8px';
+      } else {
+        marketInfo.innerHTML = `- ${ms.reason}`;
+        marketInfo.style.cssText = 'font-size:11px;color:var(--text-3);background:var(--surface-1);padding:2px 8px;border-radius:4px;margin-left:8px';
+      }
+    }
+    const modelInfo = document.getElementById('modelInfoBadge');
+    if (modelInfo) {
+      if (!mdl.ready) {
+        modelInfo.innerHTML = `[!] ${mdl.reason}`;
+        modelInfo.style.cssText = 'font-size:11px;color:var(--orange);background:rgba(249,115,22,.1);padding:2px 8px;border-radius:4px;margin-left:8px';
+      } else if (mdl.stale) {
+        modelInfo.innerHTML = `${mdl.latest_model || '模型'} 过期${mdl.model_age_days}天`;
+        modelInfo.style.cssText = 'font-size:11px;color:var(--orange);background:rgba(249,115,22,.08);padding:2px 8px;border-radius:4px;margin-left:8px';
+      } else {
+        modelInfo.innerHTML = `[OK] ${mdl.latest_model || '模型就绪'}`;
+        modelInfo.style.cssText = 'font-size:11px;color:var(--green);background:rgba(34,197,94,.08);padding:2px 8px;border-radius:4px;margin-left:8px';
+      }
+    }
+
+    if (r.data.proxy.running) {
+      badge.innerHTML = '<span class="pulse-dot active"></span>运行中';
+      badge.className = 'badge';
+      badge.style.background = 'var(--green-10)';
+      badge.style.color = 'var(--green)';
+      monitorRunning = true;
+      document.getElementById('toggleMonitorBtn').textContent = '停止监控';
+      document.getElementById('toggleMonitorBtn').className = 'btn btn-ghost btn-sm';
+      document.getElementById('autoTradeStatus').textContent = r.data.monitor.auto_trade_enabled ? '已启用' : '未启用';
+      document.getElementById('autoTradeBtn').textContent = r.data.monitor.auto_trade_enabled ? '禁用' : '启用';
+      const lt = r.data.monitor.last_decision_time;
+      document.getElementById('lastDecision').textContent = lt ? `上次: ${lt.substring(11,19)}` : '暂无决策';
+      updatePipelineUI(r.data.monitor);
+    } else {
+      badge.innerHTML = '<span class="pulse-dot inactive"></span>未启动';
+      badge.className = 'badge badge-gray';
+      monitorRunning = false;
+      document.getElementById('toggleMonitorBtn').textContent = '启动监控';
+      document.getElementById('toggleMonitorBtn').className = 'btn btn-primary btn-sm';
+    }
+  }
+}
+
+async function loadAccount() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/account`);
+  if (!r || !r.success) return;
+  const d = r.data;
+  document.getElementById('totalAssets').textContent = formatMoney(d.total_assets);
+  document.getElementById('totalPnl').textContent = formatPnlPct(d.total_pnl_pct);
+  document.getElementById('totalPnl').className = `stat-change ${pnlClass(d.total_pnl_pct)}`;
+  document.getElementById('positionValue').textContent = formatMoney(d.position_value);
+  document.getElementById('positionCount').textContent = `${d.position_count}/${d.max_positions} 只`;
+  document.getElementById('cashValue').textContent = formatMoney(d.cash);
+  const cashRatio = d.total_assets > 0 ? (d.cash / d.total_assets * 100).toFixed(1) : 0;
+  document.getElementById('cashRatio').textContent = `占比 ${cashRatio}%`;
+
+  const tbody = document.getElementById('positionTableBody');
+  if (!d.positions || d.positions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-4)">暂无持仓</td></tr>';
+    document.getElementById('pnlDistribution').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-4)">暂无持仓数据</div>';
+    return;
+  }
+  tbody.innerHTML = d.positions.map(p => `
+    <tr style="border-bottom:1px solid var(--border-1);cursor:pointer" onclick="window.location.href='stock-detail.html?code=${p.code.replace(/^(sh|sz|bj)/,'')}'">
+      <td style="padding:10px 12px"><div class="font-semibold">${p.name || p.code}</div><div class="text-xs text-muted font-mono">${p.code}</div></td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)">${p.shares}</td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)">${p.cost_price.toFixed(2)}</td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)">${p.current_price.toFixed(2)}</td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)">${formatMoney(p.market_value)}</td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)" class="${pnlClass(p.pnl)}">${formatPnl(p.pnl)}</td>
+      <td style="text-align:right;padding:10px 12px;font-family:var(--mono)" class="${pnlClass(p.pnl_pct)}">${formatPnlPct(p.pnl_pct)}</td>
+      <td style="text-align:center;padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--text-3)">${p.stop_loss > 0 ? p.stop_loss.toFixed(2) : '--'}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('pnlDistribution').innerHTML = d.positions.map(p => {
+    const pct = p.pnl_pct || 0;
+    const barWidth = Math.min(Math.abs(pct) * 5, 100);
+    return `<div class="row-between" style="align-items:center;gap:12px">
+      <span style="min-width:80px;font-size:13px;font-weight:500">${p.name || p.code}</span>
+      <div class="score-bar"><div class="score-bar-fill ${pct >= 0 ? 'positive' : 'negative'}" style="width:${barWidth}%"></div></div>
+      <span class="${pnlClass(pct)} font-mono-num" style="min-width:70px;text-align:right;font-size:13px;font-weight:600">${formatPnlPct(pct)}</span>
+    </div>`;
+  }).join('');
+}
+
+async function loadNextActions() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/next_action`);
+  if (!r || !r.success) return;
+  const d = r.data;
+  const badge = document.getElementById('tradingTimeBadge');
+  const ms = d.market_status || {};
+  const mdl = d.model_status || {};
+
+  if (ms.status === 'closed' && !ms.is_trading_day) {
+    badge.textContent = `[X] ${ms.reason}`;
+    badge.style.color = 'var(--red)';
+  } else if (d.is_trading_time) {
+    badge.textContent = '* 交易时段';
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.textContent = `- ${ms.reason || '非交易时段'}`;
+    badge.style.color = 'var(--text-3)';
+  }
+
+  const container = document.getElementById('nextActionsContainer');
+  let header = '';
+
+  if (!ms.is_trading_day) {
+    header += `<div style="padding:12px 14px;margin-bottom:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:13px;color:var(--red);font-weight:600">[X] 今日休市: ${ms.reason}，不会执行任何交易</div>`;
+  }
+
+  if (!mdl.ready) {
+    header += `<div style="padding:12px 14px;margin-bottom:8px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;font-size:13px;color:var(--orange)">[!] 模型不可用: ${mdl.reason}${mdl.latest_model ? ' (' + mdl.latest_model + ')' : ''}</div>`;
+  } else if (mdl.stale) {
+    header += `<div style="padding:10px 14px;margin-bottom:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:8px;font-size:12px;color:var(--orange)">[!] 模型已过期 ${mdl.model_age_days} 天，建议重新训练</div>`;
+  }
+
+  if (d.picks_expired) {
+    header += `<div style="padding:10px 14px;margin-bottom:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:8px;font-size:12px;color:var(--orange)">[!] 选股数据过期（${d.picks_date || '未知'}），请重新执行选股</div>`;
+  }
+
+  if (!d.actions || d.actions.length === 0) {
+    container.innerHTML = header + '<div style="text-align:center;padding:30px;color:var(--text-4)">暂无模型选股结果，请先运行每日选股</div>';
+    return;
+  }
+
+  container.innerHTML = header + d.actions.map(a => {
+    const scoreWidth = Math.min(Math.abs(a.score) * 100, 100);
+    return `<div class="decision-row">
+      <div style="min-width:70px"><div class="font-semibold" style="font-size:13px">${a.name || a.code}</div><div style="font-size:11px;color:var(--text-4)">${a.code}</div></div>
+      ${actionBadge(a.action)}
+      <div class="score-bar" style="max-width:120px"><div class="score-bar-fill ${a.score >= 0 ? 'positive' : 'negative'}" style="width:${scoreWidth}%"></div></div>
+      <span class="font-mono-num" style="font-size:12px;color:var(--text-3);min-width:50px">${a.score >= 0 ? '+' : ''}${a.score.toFixed(3)}</span>
+      <span style="font-size:11px;color:var(--text-4)">模型${a.model_score >= 0 ? '+' : ''}${a.model_score.toFixed(2)} 新闻${a.news_score >= 0 ? '+' : ''}${a.news_score.toFixed(2)}</span>
+      ${a.is_held ? '<span style="font-size:11px;color:var(--orange);background:var(--orange-10);padding:2px 6px;border-radius:4px">已持仓</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+async function loadRiskPanel() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/risk`);
+  if (!r || !r.success) return;
+  const d = r.data;
+  const badge = document.getElementById('riskBadge');
+  const container = document.getElementById('riskContainer');
+
+  if (d.portfolio_blocked) {
+    badge.textContent = '[!] 风控触发';
+    badge.style.color = 'var(--red)';
+  } else {
+    badge.textContent = '[OK] 安全';
+    badge.style.color = 'var(--green)';
+  }
+
+  let html = `<div class="risk-indicator ${d.portfolio_blocked ? 'danger' : 'safe'}">
+    <span style="font-size:13px;font-weight:500">${d.portfolio_blocked ? '组合风控已触发' : '组合风控正常'}</span>
+    <span style="font-size:12px;color:var(--text-3);margin-left:auto">${d.portfolio_reason || '日损失限制 ' + d.max_daily_loss_pct + '% / 仓位上限 ' + d.max_position_ratio + '%'}</span>
+  </div>`;
+
+  if (d.position_risks && d.position_risks.length > 0) {
+    html += d.position_risks.map(pr => {
+      const level = pr.should_close ? 'danger' : (pr.pnl_pct < -3 ? 'warning' : 'safe');
+      return `<div class="risk-indicator ${level}">
+        <span style="font-size:13px;font-weight:500">${pr.code}</span>
+        <span class="font-mono-num ${pnlClass(pr.pnl_pct)}" style="font-size:12px">${formatPnlPct(pr.pnl_pct)}</span>
+        <span style="font-size:11px;color:var(--text-4);margin-left:auto">${pr.should_close ? '[!] ' + pr.close_reason : '止损 ' + (pr.stop_loss > 0 ? pr.stop_loss.toFixed(2) : '--')}</span>
+      </div>`;
+    }).join('');
+  } else {
+    html += '<div style="text-align:center;padding:20px;color:var(--text-4);font-size:13px">暂无持仓风险数据</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function loadDecisionHistory() {
+  const r = await safeFetch(`${API_BASE}/api/monitor/decisions?limit=30`);
+  const container = document.getElementById('decisionHistoryContainer');
+  if (!r || !r.success || !r.data || r.data.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-4)">暂无决策记录</div>';
+    return;
+  }
+  container.innerHTML = r.data.reverse().map(d => {
+    const time = d.time ? d.time.substring(11, 19) : '--';
+    return `<div class="decision-row">
+      <span class="font-mono" style="font-size:12px;color:var(--text-3);min-width:60px">${time}</span>
+      ${actionBadge(d.action)}
+      <span style="font-size:13px;font-weight:500">${d.code}</span>
+      <span class="font-mono-num" style="font-size:12px;color:var(--text-3)">${d.price ? d.price.toFixed(2) : '--'} × ${d.shares || '--'}</span>
+      <span style="font-size:11px;color:var(--text-4);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.reason || ''}</span>
+      ${d.pnl ? `<span class="font-mono-num ${pnlClass(d.pnl)}" style="font-size:12px">${formatPnl(d.pnl)}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function runAutoAnalysis() {
+  const container = document.getElementById('autoAnalysisContainer');
+  container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--orange)"><div class="spinner" style="width:20px;height:20px;border:2px solid var(--border-2);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px"></div>AI 分析中...</div>';
+  const r = await safeFetch(`${API_BASE}/api/ai/daily_summary`, { method: 'POST' });
+  if (r && r.success && r.data && r.data.summary) {
+    container.innerHTML = `<div style="padding:16px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+      <div style="font-size:13px;color:var(--text-2);line-height:1.8;white-space:pre-wrap">${r.data.summary}</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text-4)">${new Date().toLocaleTimeString()}</div>
+    </div>`;
+  } else {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-4)">${r?.error || '分析失败，请检查DeepSeek API配置'}</div>`;
+  }
+}
+
+function switchPositionTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('positionListTab').style.display = tab === 'list' ? '' : 'none';
+  document.getElementById('positionPnlTab').style.display = tab === 'pnl' ? '' : 'none';
+}
+
+async function toggleAutoTrade() {
+  const btn = document.getElementById('autoTradeBtn');
+  const status = document.getElementById('autoTradeStatus');
+  if (monitorRunning) {
+    await safeFetch(`${API_BASE}/api/monitor/stop`, { method: 'POST' });
+    status.textContent = '未启用';
+    btn.textContent = '启用';
+    monitorRunning = false;
+    document.getElementById('toggleMonitorBtn').textContent = '启动监控';
+    document.getElementById('toggleMonitorBtn').className = 'btn btn-primary btn-sm';
+  } else {
+    const interval = parseInt(document.getElementById('cycleInterval').value) || 300;
+    await safeFetch(`${API_BASE}/api/monitor/start`, { method: 'POST', body: JSON.stringify({ interval }) });
+    status.textContent = '已启用';
+    btn.textContent = '禁用';
+    monitorRunning = true;
+    document.getElementById('toggleMonitorBtn').textContent = '停止监控';
+    document.getElementById('toggleMonitorBtn').className = 'btn btn-ghost btn-sm';
+    startRefresh();
+  }
+  updateProxyBadge();
+}
+
+async function updateInterval() {
+  const v = parseInt(document.getElementById('cycleInterval').value) || 300;
+  if (monitorRunning) {
+    await safeFetch(`${API_BASE}/api/monitor/start`, { method: 'POST', body: JSON.stringify({ interval: v }) });
+  }
+  Utils.showToast(`决策周期已设为 ${v} 秒`, 'success');
+  if (monitorRunning) startCountdown();
+}
+
+async function refreshAll() {
+  await Promise.all([
+    updateProxyBadge(),
+    loadAccount(),
+    loadNextActions(),
+    loadRiskPanel(),
+    loadDecisionHistory(),
+    loadPipelineLog()
+  ]);
+}
+
+refreshAll();
+</script>
+</body>
+</html>

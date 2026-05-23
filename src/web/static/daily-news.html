@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日讯息 — QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">每日讯息</h1>
+      <p class="page-sub">市场热点 · AI智能解读</p>
+    </div>
+    <div class="row gap-12">
+      <button class="btn btn-primary btn-sm" onclick="generateAISummary()">AI总结</button>
+      <button class="btn btn-ghost btn-sm" onclick="fetchNewNews()">获取最新</button>
+      <button class="btn btn-ghost btn-sm" onclick="refreshNews()">刷新</button>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px">
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title row-between" style="margin-bottom:12px">
+          <span>AI智能分析</span>
+          <button class="btn btn-ghost btn-sm" onclick="generateAISummary(true)">重新生成</button>
+        </div>
+        <div id="aiSummary">
+          <div class="empty-state">
+            <div class="icon">AI</div>
+            <div>点击"AI总结"获取今日智能分析</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border-2);margin-top:16px;padding-top:16px">
+          <div class="card-title" style="margin-bottom:12px">市场概况</div>
+          <div id="marketOverview">
+            <div style="text-align:center;padding:20px;color:var(--text-4)">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div>
+      <div class="card">
+        <div class="card-title row-between" style="margin-bottom:12px">
+          <span>今日热点</span>
+          <span class="text-xs text-muted" id="newsCount">0条</span>
+        </div>
+        <div id="newsList">
+          <div style="text-align:center;padding:40px;color:var(--text-4)">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+let newsData = [];
+
+async function refreshNews() {
+  await Promise.all([
+    loadNews(),
+    loadMarketOverview()
+  ]);
+  generateAISummary();
+}
+
+async function fetchNewNews() {
+  const btn = event?.target;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '获取中...';
+  }
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/news/trendrader/refresh`, { 
+      method: 'POST',
+      timeout: 120000
+    });
+    
+    if (result && result.success) {
+      if (btn) btn.textContent = '获取成功';
+      localStorage.setItem('lastNewsFetchDate', new Date().toDateString());
+      await refreshNews();
+    } else {
+      if (btn) btn.textContent = '获取失败';
+    }
+  } catch (e) {
+    console.error('获取最新新闻失败:', e);
+    if (btn) btn.textContent = '获取失败';
+  }
+  
+  if (btn) {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '获取最新';
+    }, 2000);
+  }
+}
+
+async function autoFetchIfNeeded() {
+  const today = new Date().toDateString();
+  const lastFetchDate = localStorage.getItem('lastNewsFetchDate');
+  
+  if (lastFetchDate !== today) {
+    await fetchNewNews();
+  } else {
+    await refreshNews();
+  }
+}
+
+async function loadNews() {
+  const container = document.getElementById('newsList');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-4)">Loading...</div>';
+  
+  try {
+    const url = `${API_BASE}/api/news/trendrader?platform=all`;
+    const result = await safeFetch(url);
+    
+    if (result && result.data && result.data.length > 0) {
+      newsData = result.data;
+      document.getElementById('newsCount').textContent = newsData.length + '条';
+      
+      container.innerHTML = newsData.slice(0, 15).map((n, i) => `
+        <div class="news-item" style="padding:14px 0;border-bottom:1px solid var(--border-1);cursor:pointer" onclick="showNewsDetail(${i})">
+          <div class="row-between" style="margin-bottom:4px">
+            <span title="${n.title.replace(/"/g, '&quot;')}" style="font-weight:600;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.title}</span>
+            ${n.rank && n.rank <= 5 ? '<span style="background:var(--orange);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px">HOT</span>' : ''}
+          </div>
+          <div class="row-between">
+            <span class="text-xs text-muted">${n.platform || '热点'} · ${n.time || ''}</span>
+            <span class="text-xs" style="color:var(--orange)">#${n.rank || '-'}</span>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-4)">暂无热点数据</div>';
+    }
+  } catch (e) {
+    console.error('加载新闻失败:', e);
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-4)">加载失败</div>';
+  }
+}
+
+async function loadMarketOverview(forceRefresh = false) {
+  const container = document.getElementById('marketOverview');
+  const CACHE_KEY = 'quantpro_market_overview';
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!forceRefresh) {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        if (data.date === today && data.content) {
+          container.innerHTML = `<div style="line-height:1.8;color:var(--text-2)">${data.content}</div>`;
+          return;
+        }
+      } catch (e) { console.warn('解析缓存失败:', e); }
+    }
+  }
+  
+  container.innerHTML = '<div style="text-align:center;padding:30px"><div class="loading-dots"></div><div class="text-sm text-muted" style="margin-top:12px">AI分析市场概况...</div></div>';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/ai/market_overview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (result && result.success && result.data) {
+      const content = result.data.summary || result.data;
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        date: today,
+        content: content
+      }));
+      container.innerHTML = `<div style="line-height:1.8;color:var(--text-2)">${content}</div>`;
+    } else {
+      container.innerHTML = `<div style="color:var(--text-3);line-height:1.8;text-align:center;padding:20px">
+        <p>AI分析暂不可用</p>
+        <p style="font-size:12px;margin-top:8px">请检查后端服务或API配置</p>
+      </div>`;
+    }
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--text-3);line-height:1.8;text-align:center;padding:20px">
+      <p>加载失败</p>
+      <p style="font-size:12px;margin-top:8px">请检查网络连接</p>
+    </div>`;
+  }
+}
+
+async function generateAISummary(forceRefresh = false) {
+  const container = document.getElementById('aiSummary');
+  const CACHE_KEY = 'quantpro_ai_summary';
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!forceRefresh) {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        if (data.date === today && data.summary) {
+          renderAISummary(data.summary);
+          return;
+        }
+      } catch (e) { console.warn('解析缓存失败:', e); }
+    }
+  }
+  
+  container.innerHTML = '<div style="text-align:center;padding:30px"><div class="loading-dots"></div><div class="text-sm text-muted" style="margin-top:12px">AI分析中...</div></div>';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/ai/daily_summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ news: newsData.slice(0, 10) })
+    });
+    
+    if (result && result.success && result.data && result.data.summary) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        date: today,
+        summary: result.data
+      }));
+      renderAISummary(result.data);
+    } else {
+      renderLocalSummary();
+    }
+  } catch (e) {
+    renderLocalSummary();
+  }
+}
+
+function renderAISummary(data) {
+  const container = document.getElementById('aiSummary');
+  let html = '<div style="line-height:1.8">';
+  
+  if (data.summary) {
+    html += `<div style="margin-bottom:16px;padding:12px;background:var(--surface-1);border-radius:8px;border-left:3px solid var(--orange)">${data.summary}</div>`;
+  }
+  
+  if (data.hot_topics && data.hot_topics.length > 0) {
+    html += `<div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">市场热点</div><div style="display:flex;flex-wrap:wrap;gap:8px">`;
+    data.hot_topics.forEach(t => {
+      html += `<span style="padding:4px 12px;background:var(--orange-10);color:var(--orange);border-radius:6px;font-size:13px">${t}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (data.related_stocks && data.related_stocks.length > 0) {
+    html += `<div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">相关股票</div><div style="display:flex;flex-wrap:wrap;gap:8px">`;
+    data.related_stocks.forEach(s => {
+      html += `<span style="padding:4px 12px;background:var(--surface-1);border-radius:6px;cursor:pointer;font-size:13px" onclick="viewStock('${s.code}')">${s.name || s.code}</span>`;
+    });
+    html += '</div></div>';
+  }
+  
+  if (data.market_impact) {
+    html += `<div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">市场影响</div><div style="color:var(--text-3)">${data.market_impact}</div></div>`;
+  }
+  
+  if (data.suggestions) {
+    html += `<div style="margin-bottom:16px"><div style="font-weight:600;margin-bottom:8px">投资建议</div><div style="color:var(--text-3)">${data.suggestions}</div></div>`;
+  }
+  
+  if (data.risk_alert) {
+    html += `<div style="padding:12px;background:rgba(239,68,68,0.1);border-radius:8px;border-left:3px solid var(--red)"><div style="font-weight:600;margin-bottom:4px">[!] 风险提示</div><div style="color:var(--text-3)">${data.risk_alert}</div></div>`;
+  }
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderLocalSummary() {
+  const container = document.getElementById('aiSummary');
+  
+  const categories = {
+    sports: [],
+    finance: [],
+    tech: [],
+    policy: [],
+    other: []
+  };
+  
+  newsData.forEach(n => {
+    const title = n.title.toLowerCase();
+    if (title.includes('股') || title.includes('市') || title.includes('涨') || title.includes('跌') || title.includes('基金') || title.includes('投资')) {
+      categories.finance.push(n);
+    } else if (title.includes('科技') || title.includes('互联网') || title.includes('手机') || title.includes('汽车')) {
+      categories.tech.push(n);
+    } else if (title.includes('政策') || title.includes('规定') || title.includes('发布')) {
+      categories.policy.push(n);
+    } else if (title.includes('比赛') || title.includes('奥运') || title.includes('冠军') || title.includes('运动员')) {
+      categories.sports.push(n);
+    } else {
+      categories.other.push(n);
+    }
+  });
+  
+  let html = '<div style="line-height:1.8">';
+  
+  if (categories.finance.length > 0) {
+    html += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;color:var(--orange)">财经热点 (${categories.finance.length}条)</div>
+      <ul style="padding-left:16px;margin:0">`;
+    categories.finance.slice(0, 3).forEach(n => {
+      html += `<li style="margin-bottom:6px;cursor:pointer;color:var(--text-2)" onclick="showNewsDetail(${newsData.indexOf(n)})">${n.title}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  if (categories.tech.length > 0) {
+    html += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;color:var(--blue)">科技动态 (${categories.tech.length}条)</div>
+      <ul style="padding-left:16px;margin:0">`;
+    categories.tech.slice(0, 3).forEach(n => {
+      html += `<li style="margin-bottom:6px;cursor:pointer;color:var(--text-2)" onclick="showNewsDetail(${newsData.indexOf(n)})">${n.title}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  if (categories.policy.length > 0) {
+    html += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;color:var(--green)">政策要闻 (${categories.policy.length}条)</div>
+      <ul style="padding-left:16px;margin:0">`;
+    categories.policy.slice(0, 3).forEach(n => {
+      html += `<li style="margin-bottom:6px;cursor:pointer;color:var(--text-2)" onclick="showNewsDetail(${newsData.indexOf(n)})">${n.title}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  const otherCount = categories.sports.length + categories.other.length;
+  if (otherCount > 0) {
+    html += `<div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px;color:var(--text-3)">其他热点 (${otherCount}条)</div>
+      <ul style="padding-left:16px;margin:0">`;
+    [...categories.sports, ...categories.other].slice(0, 3).forEach(n => {
+      html += `<li style="margin-bottom:6px;cursor:pointer;color:var(--text-2)" onclick="showNewsDetail(${newsData.indexOf(n)})">${n.title}</li>`;
+    });
+    html += '</ul></div>';
+  }
+  
+  html += `<div style="margin-top:16px;padding:12px;background:var(--surface-1);border-radius:8px;font-size:13px;color:var(--text-3)">
+    <strong>提示：</strong>配置DeepSeek API密钥可获得更详细的AI分析，包括相关股票推荐和投资建议。
+  </div>`;
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function viewStock(code) {
+  window.location.href = `stock-detail.html?code=${code}`;
+}
+
+function showNewsDetail(index) {
+  const news = newsData[index];
+  if (!news) return;
+  
+  const modal = document.getElementById('newsModal');
+  if (!modal) {
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'newsModal';
+    modalDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modalDiv.innerHTML = `
+      <div style="background:var(--surface-2);border-radius:16px;width:100%;max-width:500px;max-height:70vh;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border-1);display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:600">热点详情</div>
+          <button onclick="closeNewsModal()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:20px;">×</button>
+        </div>
+        <div id="newsModalContent" style="padding:20px;overflow-y:auto;max-height:50vh;"></div>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+  }
+  
+  document.getElementById('newsModalContent').innerHTML = `
+    <div style="font-size:16px;font-weight:600;line-height:1.6;margin-bottom:16px;">${news.title}</div>
+    <div style="display:flex;gap:12px;font-size:13px;color:var(--text-3);margin-bottom:16px;">
+      <span style="background:var(--surface-1);padding:4px 10px;border-radius:4px;">${news.platform || '热点'}</span>
+      <span>${news.time || ''}</span>
+      <span style="color:var(--orange);">热度 #${news.rank || '-'}</span>
+    </div>
+    <div style="line-height:1.8;color:var(--text-2);font-size:14px;">
+      ${news.content || news.summary || '暂无详细内容'}
+    </div>
+    ${news.url ? `<a href="${news.url}" target="_blank" style="display:inline-block;margin-top:16px;color:var(--orange);font-size:13px;">查看原文 →</a>` : ''}
+  `;
+  
+  document.getElementById('newsModal').style.display = 'flex';
+}
+
+function closeNewsModal() {
+  const modal = document.getElementById('newsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  refreshNews();
+});
+</script>
+</body>
+</html>

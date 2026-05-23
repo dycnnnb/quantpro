@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 设置</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html" class="active">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="settings-layout">
+    <!-- 侧边栏 -->
+    <div class="settings-sidebar">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;padding:0 12px">设置</h2>
+      <nav class="settings-nav">
+        <a href="#datasource" class="active" onclick="switchTab(event,this,'datasource')">数据源</a>
+        <a href="#apikeys" onclick="switchTab(event,this,'apikeys')">API 密钥</a>
+        <a href="#notify" onclick="switchTab(event,this,'notify')">通知设置</a>
+        <a href="#risk" onclick="switchTab(event,this,'risk')">风控参数</a>
+        <a href="#account" onclick="switchTab(event,this,'account')">账户信息</a>
+      </nav>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="settings-content">
+
+      <!-- 数据源 -->
+      <div id="tab-datasource" class="settings-tab" style="display:flex;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title">数据源配置</div>
+          <div class="card-sub">选择行情数据来源，支持多源切换与优先级排序</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="row-between" style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1);opacity:0.5">
+              <div class="col gap-4">
+                <div class="font-semibold">Akshare [X] 已停用</div>
+                <div class="text-sm text-muted">已整合到其他数据源，无需单独启用</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="ds_akshare" value="akshare" disabled><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="col gap-4">
+                <div class="font-semibold">Baostock</div>
+                <div class="text-sm text-muted">免费历史数据，适合回测</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="ds_baostock" value="baostock"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="col gap-4">
+                <div class="font-semibold">新浪财经（实时）</div>
+                <div class="text-sm text-muted">实时行情推送，延迟 &lt;200ms</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="ds_sina" value="sina" checked><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="col gap-4">
+                <div class="font-semibold">yfinance（海外）</div>
+                <div class="text-sm text-muted">港股、美股、ETF 历史数据</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="ds_yfinance" value="yfinance"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+          </div>
+          <div class="row gap-10" style="margin-top:16px">
+            <button class="btn btn-primary">保存数据源设置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- API密钥 -->
+      <div id="tab-apikeys" class="settings-tab" style="display:none;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title">API 密钥管理</div>
+          <div class="card-sub">配置各服务的 API Token，密钥加密存储本地</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="padding:20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:12px">
+                <span class="font-semibold">DeepSeek API Key</span>
+                <span class="badge badge-green">有效</span>
+              </div>
+              <div class="row gap-10">
+                <div class="row-between" style="flex:1;height:40px;padding:0 16px;background:var(--bg);border:1px solid var(--border-2);border-radius:8px">
+                  <span class="text-muted text-sm font-mono">sk-••••••••••••••••••••3bb6</span>
+                </div>
+                <button class="btn btn-ghost btn-sm">✎ 修改</button>
+              </div>
+            </div>
+            <div style="padding:20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:8px">
+                <span class="font-semibold">Akshare（无需密钥）</span>
+                <span class="badge badge-green">已就绪</span>
+              </div>
+              <div class="text-sm text-muted">Akshare 为开源免费库，无需配置 API 密钥，直接调用即可</div>
+            </div>
+            <div style="padding:20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:12px">
+                <span class="font-semibold">交易所 API（实盘）</span>
+                <span class="badge badge-gray">未配置</span>
+              </div>
+              <div style="display:flex;gap:10px">
+                <input class="input" style="flex:1" placeholder="输入 API Key...">
+                <button class="btn btn-primary btn-sm">+ 添加</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通知设置 -->
+      <div id="tab-notify" class="settings-tab" style="display:none;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title">通知渠道</div>
+          <div class="card-sub">配置交易信号、风控预警、每日报告的推送方式</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:10px">
+                <div class="col gap-4">
+                  <div class="font-semibold">微信推送</div>
+                  <div class="text-sm text-muted">交易信号、风控预警实时推送至微信</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="notify_wechat" checked><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+              </div>
+              <input class="input" id="wechat_webhook" style="width:100%;font-size:12px" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/...">
+            </div>
+            <div style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:10px">
+                <div class="col gap-4">
+                  <div class="font-semibold">邮件通知</div>
+                  <div class="text-sm text-muted">每日收盘后发送持仓报告至邮箱</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="notify_email"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+              </div>
+              <input class="input" id="email_address" style="width:100%;font-size:12px" placeholder="example@gmail.com">
+            </div>
+            <div style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:10px">
+                <div class="col gap-4">
+                  <div class="font-semibold">飞书机器人</div>
+                  <div class="text-sm text-muted">推送至飞书群组</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="notify_feishu"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+              </div>
+              <input class="input" id="feishu_webhook" style="width:100%;font-size:12px" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/...">
+            </div>
+          </div>
+          <div class="row gap-10" style="margin-top:16px">
+            <button class="btn btn-primary" onclick="saveNotifySettings()">保存设置</button>
+            <button class="btn btn-ghost" onclick="testNotification()">测试通知</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">通知事件</div>
+          <div class="card-sub">选择触发通知的事件类型</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="row-between" style="padding:12px 16px;background:var(--surface-1);border-radius:8px">
+              <span class="text-sm font-semibold">策略买入/卖出信号</span>
+              <label class="toggle"><input type="checkbox" id="event_trade" checked><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:12px 16px;background:var(--surface-1);border-radius:8px">
+              <span class="text-sm font-semibold">风控止损预警</span>
+              <label class="toggle"><input type="checkbox" id="event_risk" checked><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:12px 16px;background:var(--surface-1);border-radius:8px">
+              <span class="text-sm font-semibold">每日收盘报告</span>
+              <label class="toggle"><input type="checkbox" id="event_daily" checked><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+            <div class="row-between" style="padding:12px 16px;background:var(--surface-1);border-radius:8px">
+              <span class="text-sm font-semibold">回测完成通知</span>
+              <label class="toggle"><input type="checkbox" id="event_backtest"><div class="toggle-track"><div class="toggle-knob"></div></div></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 风控参数 -->
+      <div id="tab-risk" class="settings-tab" style="display:none;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title">风控参数</div>
+          <div class="card-sub">设置全局风控规则，保护账户资金安全</div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="grid-2">
+              <div class="col gap-6">
+                <label class="input-label" for="risk_stop_loss">单笔最大亏损</label>
+                <div class="row gap-8"><input class="input" id="risk_stop_loss" style="flex:1" value="3"><span class="text-muted text-sm">%</span></div>
+              </div>
+              <div class="col gap-6">
+                <label class="input-label" for="risk_daily_loss">日最大亏损</label>
+                <div class="row gap-8"><input class="input" id="risk_daily_loss" style="flex:1" value="5"><span class="text-muted text-sm">%</span></div>
+              </div>
+              <div class="col gap-6">
+                <label class="input-label" for="risk_max_drawdown">最大回撤限制</label>
+                <div class="row gap-8"><input class="input" id="risk_max_drawdown" style="flex:1" value="15"><span class="text-muted text-sm">%</span></div>
+              </div>
+              <div class="col gap-6">
+                <label class="input-label" for="risk_max_position">单股最大仓位</label>
+                <div class="row gap-8"><input class="input" id="risk_max_position" style="flex:1" value="20"><span class="text-muted text-sm">%</span></div>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="align-self:flex-start">保存风控参数</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 账户信息 -->
+      <div id="tab-account" class="settings-tab" style="display:none;flex-direction:column;gap:20px">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:20px">个人信息</div>
+          <div class="row gap-20" style="margin-bottom:20px;align-items:center">
+            <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--orange-dk));display:grid;place-items:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(249,115,22,.3)">量</div>
+            <div class="col gap-6">
+              <div class="font-semibold" style="font-size:17px">量化投资者</div>
+              <div class="text-sm text-muted">quant@example.com</div>
+              <div class="text-sm text-muted" id="userSince">使用中 · 加载中...</div>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-bottom:16px">
+            <div class="col gap-6"><label class="input-label" for="user_nickname">昵称</label><input class="input" id="user_nickname" value="量化投资者"></div>
+            <div class="col gap-6"><label class="input-label" for="user_email">邮箱</label><input class="input" id="user_email" value="quant@example.com"></div>
+          </div>
+          <div class="row gap-12" style="flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm">保存信息</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAllData()">清除所有数据</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">券商账户</div>
+          <div class="card-sub">连接同花顺客户端进行实盘交易，模拟盘无需连接</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="row-between" style="margin-bottom:12px">
+                <div class="col gap-4">
+                  <div class="font-semibold">同花顺客户端</div>
+                  <div class="text-sm text-muted">通过 easytrader 连接同花顺下单程序</div>
+                </div>
+                <span class="badge badge-gray" id="tradeConnBadge">未连接</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div>
+                  <label class="input-label">券商类型</label>
+                  <select class="input" id="tradeBroker" style="width:100%">
+                    <option value="ths">同花顺通用 (ths)</option>
+                    <option value="universal_client">通用同花顺客户端</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="input-label">下单程序路径</label>
+                  <input class="input" id="tradeExePath" style="width:100%;font-size:12px" placeholder="D:\同花顺\同花顺\xiadan.exe" value="D:\同花顺\同花顺\xiadan.exe">
+                </div>
+                <div class="grid-2">
+                  <div>
+                    <label class="input-label">账号 (可选)</label>
+                    <input class="input" id="tradeUser" style="width:100%;font-size:12px" placeholder="留空则连接已登录客户端">
+                  </div>
+                  <div>
+                    <label class="input-label">密码 (可选)</label>
+                    <input class="input" id="tradePassword" type="password" style="width:100%;font-size:12px" placeholder="留空则连接已登录客户端">
+                  </div>
+                </div>
+                <div class="row gap-10" style="margin-top:4px">
+                  <button class="btn btn-primary btn-sm" id="btnTradeConnect" onclick="connectTrade()">连接</button>
+                  <button class="btn btn-ghost btn-sm" id="btnTradeDisconnect" onclick="disconnectTrade()" style="display:none">断开</button>
+                  <button class="btn btn-ghost btn-sm" onclick="refreshTradeStatus()">刷新状态</button>
+                </div>
+              </div>
+            </div>
+            <div id="tradeAccountInfo" style="display:none;padding:16px 20px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1)">
+              <div class="font-semibold" style="margin-bottom:10px">账户信息</div>
+              <div class="grid-2" style="gap:8px" id="tradeBalanceGrid">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// 后端API连接 - 设置页面
+// 功能: 用户设置、账户管理、风险控制
+// ═══════════════════════════════════════════════════════════════════════════
+const API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : window.location.origin;
+
+// ── 从后端加载设置 ────────────────────────────────────────────────────────
+// API接口: GET /api/settings
+// 功能: 获取所有用户设置
+async function loadSettings() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/settings`);
+    if (result && result.success) {
+      console.log('[API] 设置加载成功:', result.data);
+      applySettings(result.data);
+    }
+  } catch (e) {
+    console.log('[API] 设置加载失败，使用本地数据:', e);
+    // 从本地存储加载
+    const localSettings = localStorage.getItem('quantpro_settings');
+    if (localSettings) {
+      applySettings(JSON.parse(localSettings));
+    }
+  }
+}
+
+// ── 保存设置到后端 ────────────────────────────────────────────────────────
+// API接口: POST /api/settings
+// 功能: 批量保存用户设置
+async function saveSettings(settings) {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    if (result && result.success) {
+      console.log('[API] 设置保存成功');
+      // 同步到本地存储
+      localStorage.setItem('quantpro_settings', JSON.stringify(settings));
+    }
+    return result;
+  } catch (e) {
+    console.log('[API] 设置保存失败:', e);
+    // 保存到本地存储
+    localStorage.setItem('quantpro_settings', JSON.stringify(settings));
+    return { success: true };
+  }
+}
+
+// ── 应用设置到页面 ────────────────────────────────────────────────────────
+function applySettings(settings) {
+  // 数据源设置 - Akshare已禁用
+  const dsAkshare = document.getElementById('ds_akshare');
+  const dsBaostock = document.getElementById('ds_baostock');
+  const dsSina = document.getElementById('ds_sina');
+  const dsYfinance = document.getElementById('ds_yfinance');
+  
+  // Akshare已停用，忽略其设置
+  if (dsAkshare) dsAkshare.checked = false;
+  if (dsBaostock) dsBaostock.checked = settings.datasource_baostock === '1';
+  if (dsSina) dsSina.checked = settings.datasource_sina === '1';
+  if (dsYfinance) dsYfinance.checked = settings.datasource_yfinance === '1';
+  
+  // 风险设置
+  const riskInputs = document.querySelectorAll('#tab-risk input.input');
+  if (riskInputs.length >= 4) {
+    if (settings.risk_stop_loss) riskInputs[0].value = settings.risk_stop_loss;
+    if (settings.risk_max_drawdown) riskInputs[1].value = settings.risk_max_drawdown;
+    if (settings.risk_max_drawdown) riskInputs[2].value = settings.risk_max_drawdown;
+    if (settings.risk_single_position) riskInputs[3].value = settings.risk_single_position;
+  }
+  
+  // 通知渠道设置
+  const notifyTab = document.getElementById('tab-notify');
+  if (notifyTab) {
+    // 微信推送开关
+    const wechatToggle = notifyTab.querySelectorAll('.toggle input')[0];
+    if (wechatToggle && settings.notify_wechat === '1') wechatToggle.checked = true;
+    // 邮件通知开关
+    const emailToggle = notifyTab.querySelectorAll('.toggle input')[1];
+    if (emailToggle && settings.notify_email === '1') emailToggle.checked = true;
+    // 飞书机器人开关
+    const feishuToggle = notifyTab.querySelectorAll('.toggle input')[2];
+    if (feishuToggle && settings.notify_feishu === '1') feishuToggle.checked = true;
+    
+    // Webhook URLs
+    const inputs = notifyTab.querySelectorAll('.card:first-child input.input');
+    if (inputs[0] && settings.wechat_webhook) inputs[0].value = settings.wechat_webhook;
+    if (inputs[1] && settings.email_address) inputs[1].value = settings.email_address;
+    if (inputs[2] && settings.feishu_webhook) inputs[2].value = settings.feishu_webhook;
+    
+    // 通知事件开关
+    const eventToggles = notifyTab.querySelectorAll('.card:last-child .toggle input');
+    if (eventToggles[0]) eventToggles[0].checked = settings.notify_signal !== '0';
+    if (eventToggles[1]) eventToggles[1].checked = settings.notify_risk !== '0';
+    if (eventToggles[2]) eventToggles[2].checked = settings.notify_daily !== '0';
+    if (eventToggles[3]) eventToggles[3].checked = settings.notify_backtest === '1';
+  }
+}
+
+// ── 标签切换功能 ──────────────────────────────────────────────────────────
+function switchTab(e, el, tab) {
+  e.preventDefault();
+  document.querySelectorAll('.settings-nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.settings-tab').forEach(t => { t.style.display = 'none'; });
+  const target = document.getElementById('tab-' + tab);
+  target.style.display = 'flex';
+  target.style.flexDirection = 'column';
+  target.style.gap = '20px';
+}
+
+// ── 清除所有数据 ──────────────────────────────────────────────────────────────
+// 功能: 清除所有本地存储数据
+function clearAllData() {
+  if (!confirm('确定要清除所有本地数据吗？这将清除您的设置、历史记录和自选股列表。')) {
+    return;
+  }
+  
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('quantpro_')) {
+      keysToRemove.push(key);
+    }
+  }
+  
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  
+  Utils.showToast('所有数据已清除，页面将刷新', 'success');
+  window.location.reload();
+}
+
+// ── 保存通知设置按钮 ──────────────────────────────────────────────────────
+function saveNotifySettings() {
+  const notifyTab = document.getElementById('tab-notify');
+  if (!notifyTab) return;
+  
+  const channelToggles = notifyTab.querySelectorAll('.card:first-child .toggle input');
+  const channelInputs = notifyTab.querySelectorAll('.card:first-child input.input');
+  const eventToggles = notifyTab.querySelectorAll('.card:last-child .toggle input');
+  
+  const settings = {
+    notify_wechat: channelToggles[0]?.checked ? '1' : '0',
+    notify_email: channelToggles[1]?.checked ? '1' : '0',
+    notify_feishu: channelToggles[2]?.checked ? '1' : '0',
+    wechat_webhook: channelInputs[0]?.value || '',
+    email_address: channelInputs[1]?.value || '',
+    feishu_webhook: channelInputs[2]?.value || '',
+    notify_signal: eventToggles[0]?.checked ? '1' : '0',
+    notify_risk: eventToggles[1]?.checked ? '1' : '0',
+    notify_daily: eventToggles[2]?.checked ? '1' : '0',
+    notify_backtest: eventToggles[3]?.checked ? '1' : '0'
+  };
+  
+  saveSettings(settings).then(result => {
+    if (result.success) {
+      showToast('通知设置已保存', 'success');
+    }
+  });
+}
+
+// ── Toast 提示 ──────────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 24px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-1);z-index:1000;animation:fadeIn 0.3s';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ── 测试通知发送 ────────────────────────────────────────────────────────────
+async function testNotification() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '发送中...';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/notify/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel: 'all' })
+    });
+    
+    if (result && result.success && result.result && result.result.sent) {
+      const details = (result.result.channels || []).map(c => `${c.channel}: ${c.success ? '成功' : '失败'}`).join(', ');
+      showToast('测试通知已发送 ' + (details ? '(' + details + ')' : ''), 'success');
+    } else if (result && result.success && result.result && !result.result.sent) {
+      showToast(result.result.detail || '请先配置并启用通知渠道', 'warning');
+    } else {
+      showToast('发送失败: ' + (result?.error || '未知错误'), 'error');
+    }
+  } catch (e) {
+    showToast('网络错误: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '测试通知';
+  }
+}
+
+// ── 初始化加载设置 ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  refreshTradeStatus();
+
+async function connectTrade() {
+  const btn = document.getElementById('btnTradeConnect');
+  btn.disabled = true;
+  btn.textContent = '连接中...';
+  try {
+    const result = await safeFetch(`${API_BASE}/api/real_trade/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        broker: document.getElementById('tradeBroker').value,
+        exe_path: document.getElementById('tradeExePath').value,
+        user: document.getElementById('tradeUser').value,
+        password: document.getElementById('tradePassword').value,
+      })
+    });
+    if (result && result.success) {
+      showToast('同花顺客户端已连接', 'success');
+      refreshTradeStatus();
+    } else {
+      let errMsg = result?.error || '未知错误';
+      if (result?.hint) errMsg += '\n' + result.hint;
+      showToast('连接失败: ' + errMsg, 'error', 8000);
+    }
+  } catch (e) {
+    showToast('连接异常: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '连接';
+  }
+}
+
+async function disconnectTrade() {
+  try {
+    await safeFetch(`${API_BASE}/api/real_trade/disconnect`, { method: 'POST' });
+    showToast('已断开连接', 'info');
+    refreshTradeStatus();
+  } catch (e) {
+    showToast('断开失败: ' + e.message, 'error');
+  }
+}
+
+async function refreshTradeStatus() {
+  const badge = document.getElementById('tradeConnBadge');
+  const btnConnect = document.getElementById('btnTradeConnect');
+  const btnDisconnect = document.getElementById('btnTradeDisconnect');
+  const accountInfo = document.getElementById('tradeAccountInfo');
+  try {
+    const result = await safeFetch(`${API_BASE}/api/real_trade/status`);
+    const connected = result && result.success && result.data && result.data.connected;
+    if (connected) {
+      badge.textContent = '已连接';
+      badge.className = 'badge badge-green';
+      btnConnect.style.display = 'none';
+      btnDisconnect.style.display = 'inline-flex';
+      loadTradeBalance();
+    } else {
+      badge.textContent = '未连接';
+      badge.className = 'badge badge-gray';
+      btnConnect.style.display = 'inline-flex';
+      btnDisconnect.style.display = 'none';
+      accountInfo.style.display = 'none';
+    }
+  } catch (e) {
+    badge.textContent = '检测失败';
+    badge.className = 'badge badge-red';
+  }
+}
+
+async function loadTradeBalance() {
+   try {
+     const result = await safeFetch(`${API_BASE}/api/real_trade/balance`);
+     if (result && result.success && result.data) {
+       const d = result.data;
+       const grid = document.getElementById('tradeBalanceGrid');
+       const fields = [
+         ['资金余额', d['资金余额'] || d['available'] || '--'],
+         ['可用金额', d['可用金额'] || d['cash'] || '--'],
+         ['股票市值', d['股票市值'] || d['market_value'] || '--'],
+         ['总资产', d['总资产'] || d['total_asset'] || '--'],
+       ];
+       grid.innerHTML = fields.map(([label, value]) => `
+         <div style="padding:10px 12px;background:var(--surface-2);border-radius:8px">
+           <div class="text-xs text-muted">${label}</div>
+           <div class="font-semibold" style="margin-top:4px">${value}</div>
+         </div>
+       `).join('');
+       document.getElementById('tradeAccountInfo').style.display = 'block';
+     }
+   } catch (e) {
+   }
+ }
+  document.querySelector('#tab-datasource .btn-primary')?.addEventListener('click', async () => {
+    const settings = {
+      datasource_akshare: '0',  // Akshare已停用
+      datasource_baostock: document.getElementById('ds_baostock')?.checked ? '1' : '0',
+      datasource_sina: document.getElementById('ds_sina')?.checked ? '1' : '0',
+      datasource_yfinance: document.getElementById('ds_yfinance')?.checked ? '1' : '0'
+    };
+    const result = await saveSettings(settings);
+    if (result.success) {
+      showToast('数据源设置已保存', 'success');
+    }
+  });
+
+  // ── 保存风控参数按钮 ──────────────────────────────────────────────────────
+  document.querySelector('#tab-risk .btn-primary')?.addEventListener('click', async () => {
+    const riskInputs = document.querySelectorAll('#tab-risk input.input');
+    const settings = {
+      risk_stop_loss: riskInputs[0]?.value || '3',
+      risk_max_drawdown: riskInputs[1]?.value || '15',
+      risk_single_position: riskInputs[3]?.value || '20'
+    };
+    const result = await saveSettings(settings);
+    if (result.success) {
+      showToast('风控参数已保存', 'success');
+    }
+  });
+  
+  loadSettings();
+  
+  // 更新用户使用日期
+  const userSinceEl = document.getElementById('userSince');
+  if (userSinceEl) {
+    const today = new Date();
+    userSinceEl.textContent = `使用中 · 自 ${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  document.querySelectorAll('.card, .stat-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+});
+</script>
+</body>
+</html>

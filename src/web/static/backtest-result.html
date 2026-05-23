@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 回测结果</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.chart-container {
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-1);
+}
+.trade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.trade-table th, .trade-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-1);
+}
+.trade-table th {
+  font-size: 12px;
+  color: var(--text-4);
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html" class="active">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="result-header">
+    <div>
+      <a href="backtest.html" class="text-sm text-orange" style="margin-bottom:8px;display:inline-block">← 返回策略列表</a>
+      <h1 class="page-title" id="strategyName">策略回测结果</h1>
+      <p class="page-sub" id="strategyPeriod">加载中...</p>
+    </div>
+    <div class="row gap-12">
+      <button class="btn btn-ghost btn-sm" onclick="rerunBacktest()">重新运行</button>
+      <button class="btn btn-primary btn-sm" onclick="applyToLive()">应用到实盘</button>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">总收益率</div>
+        <div class="stat-value text-green" id="totalReturn">+18.5%</div>
+        <div class="stat-change up">↑ 跑赢沪深300 12.3%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">年化收益</div>
+        <div class="stat-value" id="annualReturn">22.3%</div>
+        <div class="stat-change">--</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">夏普比率</div>
+        <div class="stat-value" id="sharpeRatio">1.85</div>
+        <div class="stat-change up">优秀</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">最大回撤</div>
+        <div class="stat-value text-red" id="maxDrawdown">-8.2%</div>
+        <div class="stat-change">风险可控</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title" style="margin-bottom:16px">收益曲线</div>
+    <div class="chart-container" id="chartContainer" style="height:300px;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;color:var(--text-4)">
+        <div style="font-size:48px;margin-bottom:10px">收益</div>
+        <div>收益曲线加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">策略参数</div>
+      <div id="strategyParams">
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">初始资金</span>
+          <span class="font-mono">¥1,000,000</span>
+        </div>
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">交易次数</span>
+          <span class="font-mono">156</span>
+        </div>
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">胜率</span>
+          <span class="font-mono text-green">62.8%</span>
+        </div>
+        <div class="row-between" style="padding:8px 0">
+          <span style="color:var(--text-3)">盈亏比</span>
+          <span class="font-mono">1.85</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px">风险指标</div>
+      <div id="riskMetrics">
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">波动率</span>
+          <span class="font-mono">15.2%</span>
+        </div>
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">下行风险</span>
+          <span class="font-mono">8.6%</span>
+        </div>
+        <div class="row-between" style="padding:8px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">Beta</span>
+          <span class="font-mono">0.75</span>
+        </div>
+        <div class="row-between" style="padding:8px 0">
+          <span style="color:var(--text-3)">Alpha</span>
+          <span class="font-mono text-green">+12.3%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px">交易记录</div>
+    <div class="table-wrap">
+      <table class="trade-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>股票</th>
+            <th>方向</th>
+            <th>价格</th>
+            <th>数量</th>
+            <th>盈亏</th>
+          </tr>
+        </thead>
+        <tbody id="tradeRecords">
+          <tr>
+            <td colspan="6" style="text-align:center;padding:30px;color:var(--text-4)">加载中...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+var strategyId = null;
+var strategyType = null;
+
+function getUrlParams() {
+  var params = new URLSearchParams(window.location.search);
+  strategyId = params.get('id');
+  strategyType = params.get('type');
+}
+
+// ── 显示加载状态 ──────────────────────────────────────────────────────
+function showLoading() {
+  // 统计卡片加载状态
+  const statCards = document.querySelectorAll('.stat-card .stat-value');
+  statCards.forEach(el => {
+    el.innerHTML = '<div class="loading-spinner"></div>';
+  });
+  
+  const statChanges = document.querySelectorAll('.stat-card .stat-change');
+  statChanges.forEach(el => {
+    el.textContent = '加载中...';
+  });
+
+  // 收益曲线加载状态
+  const chartContainer = document.getElementById('chartContainer');
+  if (chartContainer) {
+    chartContainer.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-4)">
+        <div class="loading-spinner" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div>收益曲线加载中...</div>
+      </div>
+    `;
+  }
+
+  // 策略参数加载状态
+  const strategyParams = document.getElementById('strategyParams');
+  if (strategyParams) {
+    strategyParams.innerHTML = `
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">初始资金</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">交易次数</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">胜率</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0">
+        <span style="color:var(--text-3)">盈亏比</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+    `;
+  }
+
+  // 风险指标加载状态
+  const riskMetrics = document.getElementById('riskMetrics');
+  if (riskMetrics) {
+    riskMetrics.innerHTML = `
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">波动率</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">下行风险</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+        <span style="color:var(--text-3)">Beta</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+      <div class="row-between" style="padding:12px 0">
+        <span style="color:var(--text-3)">Alpha</span>
+        <div class="loading-spinner" style="width:16px;height:16px"></div>
+      </div>
+    `;
+  }
+
+  // 交易记录加载状态
+  const tradeRecords = document.getElementById('tradeRecords');
+  if (tradeRecords) {
+    tradeRecords.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center;padding:30px;color:var(--text-4)">
+          <div class="loading-spinner" style="width:24px;height:24px;margin:0 auto 10px"></div>
+          <div>加载交易记录...</div>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function loadBacktestResult() {
+  showLoading();
+
+  setTimeout(() => {
+    var strategies = JSON.parse(localStorage.getItem('quantpro_strategies') || '[]');
+    var strategy = strategies.find(function(s) { return s.id == strategyId; });
+
+    if (strategy) {
+      document.getElementById('strategyName').textContent = strategy.name || '策略回测结果';
+      document.getElementById('strategyPeriod').textContent = (strategy.start_date || '加载中...') + ' 至 ' + (strategy.end_date || '加载中...');
+
+      var profitRate = parseFloat(strategy.profit_rate);
+      if (profitRate !== null && !isNaN(profitRate)) {
+        document.getElementById('totalReturn').textContent = (profitRate >= 0 ? '+' : '') + profitRate.toFixed(1) + '%';
+        document.getElementById('totalReturn').className = 'stat-value ' + (profitRate >= 0 ? 'text-green' : 'text-red');
+        document.getElementById('annualReturn').textContent = (profitRate * 1.2).toFixed(1) + '%';
+      } else {
+        document.getElementById('totalReturn').textContent = '--';
+        document.getElementById('annualReturn').textContent = '--';
+      }
+      document.getElementById('sharpeRatio').textContent = '--';
+      document.getElementById('maxDrawdown').textContent = '--';
+    } else {
+      // 未找到策略，清除所有加载状态
+      document.getElementById('strategyName').textContent = '未找到策略';
+      document.getElementById('totalReturn').textContent = '--';
+      document.getElementById('annualReturn').textContent = '--';
+      document.getElementById('sharpeRatio').textContent = '--';
+      document.getElementById('maxDrawdown').textContent = '--';
+      // 清除stat-change加载文字
+      document.querySelectorAll('.stat-card .stat-change').forEach(function(el) {
+        if (el.textContent === '加载中...') el.textContent = '--';
+      });
+    }
+
+    // 清除策略参数和风险指标加载状态
+    var strategyParams = document.getElementById('strategyParams');
+    if (strategyParams && strategyParams.querySelector('.loading-spinner')) {
+      strategyParams.innerHTML = `
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">初始资金</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">交易次数</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">胜率</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0">
+          <span style="color:var(--text-3)">盈亏比</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+      `;
+    }
+
+    var riskMetrics = document.getElementById('riskMetrics');
+    if (riskMetrics && riskMetrics.querySelector('.loading-spinner')) {
+      riskMetrics.innerHTML = `
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">波动率</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">下行风险</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0;border-bottom:1px solid var(--border-1)">
+          <span style="color:var(--text-3)">Beta</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+        <div class="row-between" style="padding:12px 0">
+          <span style="color:var(--text-3)">Alpha</span>
+          <span class="font-semibold font-mono">--</span>
+        </div>
+      `;
+    }
+
+    loadTradeRecords();
+    renderChart();
+  }, 800); // 模拟加载延迟
+}
+
+async function loadTradeRecords() {
+  var tbody = document.getElementById('tradeRecords');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-4)">暂无交易记录</td></tr>';
+}
+
+function renderChart() {
+  var container = document.getElementById('chartContainer');
+  container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-4)">暂无数据</div>';
+}
+
+function rerunBacktest() {
+  alert('正在重新运行回测...');
+  loadBacktestResult();
+}
+
+function applyToLive() {
+  if (confirm('确定要将此策略应用到模拟盘吗？')) {
+    Utils.showToast('策略已应用到模拟盘', 'success');
+  }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+  getUrlParams();
+  loadBacktestResult();
+});
+</script>
+</body>
+</html>

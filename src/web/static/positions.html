@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>持仓管理 — QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<style>
+.position-card {
+  background: var(--surface-1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-1);
+  transition: all 0.2s;
+}
+.position-card:hover {
+  border-color: var(--orange-30);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.trade-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.trade-modal-content {
+  background: var(--surface-2);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html" class="active">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">持仓管理</h1>
+      <p class="page-sub">模拟盘交易 · 智能风控</p>
+    </div>
+    <div class="row gap-12">
+      <button class="btn btn-primary btn-sm" onclick="showBuyModal()">买入</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetAccount()">重置账户</button>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-label">总资产</div>
+      <div class="stat-value" id="totalAsset">--</div>
+      <div class="stat-change" id="totalChange">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">可用资金</div>
+      <div class="stat-value" id="availableCash">--</div>
+      <div class="stat-change" style="color:var(--text-3)">可交易资金</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">持仓市值</div>
+      <div class="stat-value" id="positionValue">--</div>
+      <div class="stat-change" id="positionChange">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">今日盈亏</div>
+      <div class="stat-value" id="todayProfit">--</div>
+      <div class="stat-change" id="todayProfitRate">--</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="gap:20px">
+    <div class="card">
+      <div class="card-title row-between">
+        <span>当前持仓</span>
+        <span class="text-xs text-muted" id="positionCount">0只</span>
+      </div>
+      <div id="positionsList">
+        <div style="text-align:center;padding:40px;color:var(--text-4)">暂无持仓</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title row-between">
+        <span>快速交易</span>
+        <button class="btn btn-ghost btn-sm" onclick="loadQuickTrade()">刷新</button>
+      </div>
+      <div id="quickTradeList" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-4)">Loading...</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="tradeModal" class="trade-modal" style="display:none">
+  <div class="trade-modal-content">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="font-semibold" id="tradeModalTitle">买入</div>
+      <button onclick="closeTradeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-3)">×</button>
+    </div>
+    <div id="tradeForm">
+      <div style="margin-bottom:16px">
+        <label class="text-xs text-muted">股票代码</label>
+        <input type="text" id="tradeCode" class="input" placeholder="输入股票代码" style="width:100%">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="text-xs text-muted">股票名称</label>
+        <input type="text" id="tradeName" class="input" placeholder="股票名称" style="width:100%" readonly>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="text-xs text-muted">当前价格</label>
+        <input type="text" id="tradePrice" class="input" style="width:100%" readonly>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="text-xs text-muted" id="tradeAmountLabel">买入数量（股）</label>
+        <input type="number" id="tradeAmount" class="input" placeholder="100的整数倍" style="width:100%" min="100" step="100">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="text-xs text-muted">预计金额</label>
+        <div id="tradeTotal" class="font-semibold" style="font-size:18px">¥0.00</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" id="tradeBtn" onclick="executeTrade()">确认买入</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+let accountData = null;
+let currentStock = null;
+
+async function loadAccount() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/mock/account`);
+    if (result && result.success) {
+      accountData = result.data;
+      updateUI();
+    }
+  } catch (e) {
+    console.error('加载账户失败:', e);
+  }
+}
+
+function updateUI() {
+  if (!accountData) return;
+
+  const totalAsset = accountData.total_asset || 0;
+  const availableCash = accountData.available_cash || 0;
+  const positions = accountData.positions || [];
+  const todayProfit = accountData.today_profit || 0;
+
+  let positionValue = 0;
+  positions.forEach(p => {
+    positionValue += (p.shares || 0) * (p.current_price || p.price || 0);
+  });
+
+  document.getElementById('totalAsset').textContent = '¥' + totalAsset.toLocaleString();
+  document.getElementById('availableCash').textContent = '¥' + availableCash.toLocaleString();
+  document.getElementById('positionValue').textContent = '¥' + positionValue.toLocaleString();
+  document.getElementById('positionCount').textContent = positions.length + '只';
+
+  const todayProfitEl = document.getElementById('todayProfit');
+  todayProfitEl.textContent = (todayProfit >= 0 ? '+' : '') + '¥' + todayProfit.toLocaleString();
+  todayProfitEl.className = 'stat-value ' + (todayProfit >= 0 ? 'text-green' : 'text-red');
+
+  renderPositions(positions);
+}
+
+function renderPositions(positions) {
+  const container = document.getElementById('positionsList');
+
+  if (!positions || positions.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-4)">暂无持仓</div>';
+    return;
+  }
+
+  container.innerHTML = positions.map(p => {
+    const shares = p.shares || p.amount || 0;
+    const costPrice = p.cost_price || p.cost || 0;
+    const currentPrice = p.current_price || p.price || costPrice;
+    const profit = (currentPrice - costPrice) * shares;
+    const profitRate = costPrice > 0 ? ((currentPrice / costPrice - 1) * 100) : 0;
+    const profitClass = profit >= 0 ? 'text-green' : 'text-red';
+
+    return `
+      <div class="position-card">
+        <div class="row-between" style="margin-bottom:8px">
+          <div>
+            <span class="font-semibold">${p.name || '未知'}</span>
+            <span class="text-xs text-muted font-mono" style="margin-left:8px">${p.code || ''}</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showSellModal('${p.code}', '${p.name}', ${currentPrice}, ${shares})">卖出</button>
+        </div>
+        <div class="row-between text-sm">
+          <span class="text-muted">持仓 ${shares}股 · 成本 ¥${costPrice.toFixed(2)}</span>
+          <span class="${profitClass}">盈亏 ${profit >= 0 ? '+' : ''}${profit.toFixed(2)} (${profitRate >= 0 ? '+' : ''}${profitRate.toFixed(2)}%)</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadQuickTrade() {
+  const container = document.getElementById('quickTradeList');
+  container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-4)">Loading...</div>';
+
+  try {
+    const [stockResp, etfResp] = await Promise.all([
+      safeFetch(`${API_BASE}/api/stock/list?limit=4`),
+      safeFetch(`${API_BASE}/api/etf/list?limit=2`)
+    ]);
+
+    const items = [];
+
+    if (stockResp && stockResp.data) {
+      stockResp.data.forEach(s => items.push({ ...s, type: 'stock' }));
+    }
+
+    if (etfResp && etfResp.data) {
+      etfResp.data.forEach(e => items.push({ code: e.code, name: e.name, price: e.price, change_pct: e.change_pct, type: 'etf' }));
+    }
+
+    if (items.length > 0) {
+      container.innerHTML = items.slice(0, 6).map(item => {
+        const changeClass = (item.change_pct || 0) >= 0 ? 'text-green' : 'text-red';
+        return `
+          <div style="padding:14px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-1);cursor:pointer"
+               onclick="showBuyModal('${item.code}', '${item.name}', ${item.price || 0})">
+            <div class="row-between" style="margin-bottom:6px">
+              <span class="font-semibold text-sm">${item.name}</span>
+              <span class="${changeClass} text-xs">${(item.change_pct || 0) >= 0 ? '+' : ''}${(item.change_pct || 0).toFixed(2)}%</span>
+            </div>
+            <div class="font-mono-num">¥${(item.price || 0).toFixed(2)}</div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-4)">暂无数据</div>';
+    }
+  } catch (e) {
+    console.error('加载快速交易失败:', e);
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-4)">加载失败</div>';
+  }
+}
+
+function showBuyModal(code = '', name = '', price = 0) {
+  document.getElementById('tradeModalTitle').textContent = '买入';
+  document.getElementById('tradeAmountLabel').textContent = '买入数量（股）';
+  document.getElementById('tradeBtn').textContent = '确认买入';
+  document.getElementById('tradeCode').value = code;
+  document.getElementById('tradeName').value = name;
+  document.getElementById('tradePrice').value = price ? price.toFixed(2) : '';
+  document.getElementById('tradeAmount').value = '';
+  document.getElementById('tradeTotal').textContent = '¥0.00';
+  document.getElementById('tradeModal').style.display = 'flex';
+
+  currentStock = { code, name, price };
+
+  document.getElementById('tradeAmount').oninput = function() {
+    const amount = parseInt(this.value) || 0;
+    const total = amount * (currentStock.price || 0);
+    document.getElementById('tradeTotal').textContent = '¥' + total.toLocaleString();
+  };
+
+  if (!code) {
+    document.getElementById('tradeCode').oninput = async function() {
+      const inputCode = this.value.trim();
+      if (inputCode.length >= 6) {
+        const result = await safeFetch(`${API_BASE}/api/stock/detail/${inputCode}`);
+        if (result && result.data) {
+          currentStock = {
+            code: inputCode,
+            name: result.data.name,
+            price: result.data.price || result.data.current_price
+          };
+          document.getElementById('tradeName').value = currentStock.name;
+          document.getElementById('tradePrice').value = currentStock.price.toFixed(2);
+        }
+      }
+    };
+  }
+}
+
+function showSellModal(code, name, price, shares) {
+  document.getElementById('tradeModalTitle').textContent = '卖出';
+  document.getElementById('tradeAmountLabel').textContent = '卖出数量（股）';
+  document.getElementById('tradeBtn').textContent = '确认卖出';
+  document.getElementById('tradeCode').value = code;
+  document.getElementById('tradeName').value = name;
+  document.getElementById('tradePrice').value = price.toFixed(2);
+  document.getElementById('tradeAmount').value = shares;
+  document.getElementById('tradeAmount').max = shares;
+  document.getElementById('tradeTotal').textContent = '¥' + (shares * price).toLocaleString();
+  document.getElementById('tradeModal').style.display = 'flex';
+
+  currentStock = { code, name, price, maxShares: shares };
+
+  document.getElementById('tradeAmount').oninput = function() {
+    const amount = parseInt(this.value) || 0;
+    const total = amount * (currentStock.price || 0);
+    document.getElementById('tradeTotal').textContent = '¥' + total.toLocaleString();
+  };
+}
+
+function closeTradeModal() {
+  document.getElementById('tradeModal').style.display = 'none';
+}
+
+async function executeTrade() {
+  const code = document.getElementById('tradeCode').value.trim();
+  const name = document.getElementById('tradeName').value;
+  const price = parseFloat(document.getElementById('tradePrice').value);
+  const amount = parseInt(document.getElementById('tradeAmount').value);
+  const isBuy = document.getElementById('tradeModalTitle').textContent === '买入';
+
+  if (!code || !amount) {
+    alert('请填写完整信息');
+    return;
+  }
+
+  const endpoint = isBuy ? '/api/trade/buy' : '/api/trade/sell';
+  const body = isBuy
+    ? { code, name, price, amount: amount }
+    : { code, price, amount: amount };
+
+  const result = await safeFetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (result && result.success) {
+    Utils.showToast(result.message || '交易成功', 'success');
+    closeTradeModal();
+    loadAccount();
+  } else {
+    alert(result?.message || '交易失败');
+  }
+}
+
+async function resetAccount() {
+  if (!confirm('确定要重置账户吗？所有持仓将被清空。')) return;
+
+  const result = await safeFetch(`${API_BASE}/api/mock/reset`, { method: 'POST' });
+  if (result && result.success) {
+    Utils.showToast('账户已重置', 'success');
+    loadAccount();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadAccount();
+  loadQuickTrade();
+});
+</script>
+</body>
+</html>

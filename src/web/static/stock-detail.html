@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 股票详情</title>
+<link rel="stylesheet" href="styles.css?v=20260227">
+</head>
+<body>
+<script src="js/config.js?v=20260227"></script>
+<script src="js/utils.js?v=20260227"></script>
+<script src="js/api.js?v=20260227"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <!-- 顶部面包屑 + 标题 -->
+  <div style="margin-bottom:20px">
+    <div class="text-sm text-muted" style="margin-bottom:8px">
+      <a href="stocks.html" style="color:var(--text-3)">市场</a>
+      <span style="margin:0 6px">›</span>
+      <span id="breadName">平安银行</span>
+    </div>
+    <div class="row-between" style="flex-wrap:wrap;gap:12px">
+      <div class="row gap-16" style="align-items:flex-end">
+        <div>
+          <div style="font-size:22px;font-weight:700" id="stockName">加载中...</div>
+          <div class="text-muted font-mono" style="font-size:13px;margin-top:2px" id="stockCode">加载中...</div>
+        </div>
+        <div>
+          <div style="font-size:32px;font-weight:700;font-family:var(--mono)" id="stockPrice">
+            <div class="loading-spinner" style="width:24px;height:24px"></div>
+          </div>
+          <div style="font-size:14px;margin-top:2px" id="stockChange">加载中...</div>
+        </div>
+      </div>
+      <div class="row gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="toggleWatch()" id="watchBtn">加自选</button>
+        <button class="btn btn-ghost btn-sm" onclick="analyzeStock()" id="analyzeBtn">AI分析</button>
+        <button class="btn btn-primary btn-sm" onclick="window.location.href='market.html'">查看行情图</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 核心行情数据 -->
+  <div class="grid-4" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="content-wrapper">
+        <div class="stat-label">今开</div>
+        <div class="stat-value font-mono" id="dOpen"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">昨收 <span id="dPrevClose">加载中...</span></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="content-wrapper">
+        <div class="stat-label">最高 / 最低</div>
+        <div class="stat-value font-mono"><span id="dHigh"><div class="loading-spinner" style="width:16px;height:16px"></div></span> / <span id="dLow">加载中...</span></div>
+        <div class="stat-change" style="color:var(--text-3)">今日振幅 <span id="dAmplitude">加载中...</span></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="content-wrapper">
+        <div class="stat-label">成交量 / 成交额</div>
+        <div class="stat-value font-mono" id="dVol"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)" id="dAmount">加载中...</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="content-wrapper">
+        <div class="stat-label">换手率 / 量比</div>
+        <div class="stat-value font-mono" id="dTurnover"><div class="loading-spinner" style="width:16px;height:16px"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">量比 <span id="dVolRatio">加载中...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- K线行情图 -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="row-between" style="margin-bottom:16px">
+      <div class="row gap-12">
+        <div class="card-title" id="klineTitle">A股K线</div>
+        <span class="badge" id="kBadge">--</span>
+      </div>
+      <div class="row gap-6">
+        <button class="btn btn-ghost btn-sm kperiod-btn" data-p="5m">5分</button>
+        <button class="btn btn-ghost btn-sm kperiod-btn kperiod-active" data-p="day">日K</button>
+        <button class="btn btn-ghost btn-sm kperiod-btn" data-p="week">周K</button>
+        <button class="btn btn-ghost btn-sm kperiod-btn" data-p="month">月K</button>
+      </div>
+    </div>
+    <div id="ohlcBar" class="row gap-16" style="margin-bottom:10px;font-size:12px;font-family:var(--mono);min-height:18px">
+      <span>开 <span id="ohlcO" class="text-orange">—</span></span>
+      <span>高 <span id="ohlcH" class="text-red">—</span></span>
+      <span>低 <span id="ohlcL" class="text-green">—</span></span>
+      <span>收 <span id="ohlcC" class="text-orange">—</span></span>
+      <span>量 <span id="ohlcV" class="text-muted">—</span></span>
+      <span>涨跌 <span id="ohlcChg">—</span></span>
+    </div>
+    <div style="position:relative">
+      <div id="klineLoading" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:var(--surface-2);z-index:10">
+        <div style="text-align:center">
+          <div class="loading-spinner" style="width:32px;height:32px;margin:0 auto 12px"></div>
+          <div style="color:var(--text-4);font-size:14px">加载K线数据...</div>
+        </div>
+      </div>
+      <canvas id="klineChart" style="width:100%;height:260px;display:block;cursor:crosshair"></canvas>
+      <canvas id="volChart" style="width:100%;height:56px;display:block;cursor:crosshair"></canvas>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px">
+
+    <!-- AI股票分析 -->
+      <div class="card">
+        <div class="row-between" style="margin-bottom:14px">
+          <div class="card-title">AI股票分析</div>
+          <button class="btn btn-primary" id="aiAnalyzeBtn" onclick="runAIAnalysis()" style="padding:6px 12px;font-size:12px">
+            <span id="aiBtnText">开始分析</span>
+          </button>
+        </div>
+        <div id="aiAnalysisContent" style="min-height:200px">
+          <div id="aiAnalysisPlaceholder" class="text-center" style="padding:40px 20px;color:var(--text-3)">
+            <div style="font-size:48px;margin-bottom:16px;opacity:0.5">AI</div>
+            <div class="text-sm">点击"开始分析"按钮，AI将为您生成专业的股票分析报告</div>
+            <div class="text-xs text-muted" style="margin-top:8px">基于Deepseek AI · 包含技术面、基本面、投资建议</div>
+          </div>
+          <div id="aiAnalysisLoading" class="text-center" style="padding:40px 20px;display:none">
+            <div class="spinner" style="width:40px;height:40px;margin:0 auto 16px;border:3px solid var(--border-1);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite"></div>
+            <div class="text-sm" id="aiLoadingText">AI正在分析中...</div>
+          </div>
+          <div id="aiAnalysisResult" style="display:none">
+            <div class="text-sm" style="line-height:1.8;color:var(--text-2);white-space:pre-wrap" id="aiAnalysisText"></div>
+            <div class="text-xs text-muted" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-1)">
+              <span id="aiAnalysisTime"></span> · 由Deepseek AI生成
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近期操作记录 -->
+      <div class="card">
+        <div class="row-between" style="margin-bottom:14px">
+          <div class="card-title">本股操作记录</div>
+          <a href="history.html" class="text-sm text-orange">查看全部 →</a>
+        </div>
+        <div class="table-wrap">
+          <table id="stockHistoryTable">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>来源</th>
+                <th>操作</th>
+                <th>价格</th>
+                <th>数量</th>
+                <th>盈亏</th>
+              </tr>
+            </thead>
+            <tbody id="stockHistoryBody">
+              <tr><td colspan="6" class="text-muted text-sm" style="text-align:center;padding:20px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+
+// ── URL 参数解析 ──────────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const code = params.get('code') || '000001';
+const name = params.get('name') || '平安银行';
+
+// ── 从后端加载股票详情 ────────────────────────────────────────────────
+function waitMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchDetailWithPolling(period = 'day', maxRetries = 10, intervalMs = 1000) {
+  let lastResult = null;
+  for (let i = 0; i < maxRetries; i++) {
+    const params = new URLSearchParams({ period });
+    const result = await safeFetch(`${API_BASE}/api/stock/detail/${code}?${params}`);
+    lastResult = result;
+    if (result && result.success && result.data) {
+      const status = result.data.kline_status || 'ready';
+      const kline = result.data.kline || [];
+      if (kline.length > 0) return result;
+      if (status === 'fetching' || status === 'calculating') {
+        showKlineLoading(result.data.kline_message || (status === 'fetching' ? '正在获取数据...' : '正在计算K线...'));
+        await waitMs(intervalMs);
+        continue;
+      }
+      return result;
+    }
+    await waitMs(intervalMs);
+  }
+  return lastResult;
+}
+
+async function loadStockDetail() {
+  console.log('[loadStockDetail] 开始加载股票详情, code:', code);
+  showKlineLoading('正在获取数据...');
+  document.getElementById('dOpen').textContent = '--';
+  document.getElementById('dPrevClose').textContent = '--';
+  document.getElementById('dHigh').textContent = '--';
+  document.getElementById('dLow').textContent = '--';
+  document.getElementById('dAmplitude').textContent = '--';
+  document.getElementById('dVol').textContent = '--';
+  document.getElementById('dAmount').textContent = '--';
+  document.getElementById('dTurnover').textContent = '--';
+  document.getElementById('dVolRatio').textContent = '--';
+  
+  try {
+    const url = `${API_BASE}/api/stock/detail/${code}?period=day`;
+    console.log('[loadStockDetail] 请求URL:', url);
+    const result = await fetchDetailWithPolling('day');
+    console.log('[loadStockDetail] 收到响应:', result ? 'success=' + result.success : 'null');
+    
+    if (result && result.success && result.data) {
+      const data = result.data;
+      console.log('[loadStockDetail] 数据字段:', Object.keys(data));
+      console.log('[loadStockDetail] K线数据条数:', data.kline ? data.kline.length : 0);
+      
+      document.getElementById('breadName').textContent = data.name || name;
+      document.getElementById('stockName').textContent = data.name || name;
+      document.getElementById('stockCode').textContent = `${code} · ${data.market || ''}${data.industry ? ' · ' + data.industry : ''}`;
+      
+      // 从K线数据中提取最新数据（如果后端没有返回单独字段）
+      const latestKline = data.kline && data.kline.length > 0 ? data.kline[data.kline.length - 1] : null;
+      
+      if (data.price || data.now || (latestKline && latestKline.c)) {
+        const price = data.price || data.now || (latestKline ? latestKline.c : 0);
+        const prevClose = data.prev_close || data.close || (data.kline && data.kline.length > 1 ? data.kline[data.kline.length - 2].c : 0);
+        const changePct = data.change_pct || (prevClose > 0 ? ((price - prevClose) / prevClose * 100) : 0);
+        const changeClass = changePct >= 0 ? 'text-red' : 'text-green';
+        const changeSign = changePct >= 0 ? '+' : '';
+        document.getElementById('stockPrice').textContent = price.toFixed(2);
+        document.getElementById('stockChange').innerHTML = `<span class="${changeClass}">${changeSign}${changePct.toFixed(2)}%</span>`;
+        document.getElementById('kBadge').textContent = `${changeSign}${changePct.toFixed(2)}%`;
+        document.getElementById('kBadge').className = `badge ${changePct >= 0 ? 'badge-red' : 'badge-green'}`;
+      }
+      
+      // 优先使用后端返回的字段，否则从K线数据提取
+      const openVal = data.open || (latestKline ? latestKline.o : null);
+      const highVal = data.high || (latestKline ? latestKline.h : null);
+      const lowVal = data.low || (latestKline ? latestKline.l : null);
+      const volumeVal = data.volume || (latestKline ? latestKline.v : null);
+      const closeVal = data.prev_close || (data.kline && data.kline.length > 1 ? data.kline[data.kline.length - 2].c : price);
+      
+      if (openVal !== null && openVal !== undefined) document.getElementById('dOpen').textContent = Number(openVal).toFixed(2);
+      if (closeVal !== null && closeVal !== undefined) document.getElementById('dPrevClose').textContent = Number(closeVal).toFixed(2);
+      if (highVal !== null && highVal !== undefined) document.getElementById('dHigh').textContent = Number(highVal).toFixed(2);
+      if (lowVal !== null && lowVal !== undefined) document.getElementById('dLow').textContent = Number(lowVal).toFixed(2);
+      if (volumeVal !== null && volumeVal !== undefined) document.getElementById('dVol').textContent = formatVolume(Number(volumeVal));
+      if (data.amount !== null && data.amount !== undefined) document.getElementById('dAmount').textContent = formatAmount(Number(data.amount));
+      
+      // 计算振幅
+      if (highVal !== null && highVal !== undefined && lowVal !== null && lowVal !== undefined && closeVal) {
+        const amplitude = ((Number(highVal) - Number(lowVal)) / Number(closeVal) * 100);
+        document.getElementById('dAmplitude').textContent = amplitude.toFixed(2) + '%';
+      }
+      
+      if (data.turnover !== undefined) {
+        if (data.turnover > 1) {
+          document.getElementById('dTurnover').textContent = formatAmount(data.turnover);
+        } else {
+          document.getElementById('dTurnover').textContent = (data.turnover * 100).toFixed(2) + '%';
+        }
+      }
+      if (data.vol_ratio !== null && data.vol_ratio !== undefined) document.getElementById('dVolRatio').textContent = Number(data.vol_ratio).toFixed(2);
+      
+      document.querySelectorAll('.stat-card .content-wrapper').forEach(el => {
+        el.classList.add('content-loaded');
+      });
+      
+      if (data.kline && data.kline.length > 0) {
+        let klineData = normalizeKline(data.kline);
+
+        const limitMap = { '5m': 240, 'day': 120, 'week': 52, 'month': 24 };
+        const limit = limitMap[currentPeriod] || 120;
+        if (klineData.length > limit) {
+          klineData = klineData.slice(-limit);
+        }
+        
+        KDATA.day = klineData;
+        currentData = KDATA.day;
+      } else {
+        showKlineError('该股票暂无K线数据');
+      }
+      
+      // 绘制K线图
+      if (currentData.length > 0) {
+        const newKCanvas = document.getElementById('klineChart');
+        const newVCanvas = document.getElementById('volChart');
+        if (newKCanvas && newVCanvas) {
+          initKlineChart(newKCanvas, newVCanvas);
+          drawKline(currentData);
+        }
+      }
+      
+      // 更新K线图标题
+      document.getElementById('klineTitle').textContent = (data.name || name) + ' A股K线';
+    } else {
+      showLoadFailed(result);
+    }
+  } catch (e) {
+    showLoadFailed(e);
+  }
+}
+
+function showLoadFailed(err) {
+  showKlineError('数据加载失败，请检查后端服务是否运行');
+  document.getElementById('stockPrice').textContent = '--';
+  document.getElementById('stockChange').textContent = '数据加载失败';
+  document.getElementById('dOpen').textContent = '--';
+  document.getElementById('dPrevClose').textContent = '--';
+  document.getElementById('dHigh').textContent = '--';
+  document.getElementById('dLow').textContent = '--';
+  document.getElementById('dAmplitude').textContent = '--';
+  document.getElementById('dVol').textContent = '--';
+  document.getElementById('dAmount').textContent = '--';
+  document.getElementById('dTurnover').textContent = '--';
+  document.getElementById('dVolRatio').textContent = '--';
+  document.getElementById('breadName').textContent = name;
+  document.getElementById('stockName').textContent = name;
+  document.getElementById('stockCode').textContent = code;
+  console.warn('[stock-detail] 数据加载失败:', err);
+}
+
+function formatVolume(vol) {
+  if (vol >= 100000000) return (vol / 100000000).toFixed(2) + '亿';
+  if (vol >= 10000) return (vol / 10000).toFixed(0) + '万';
+  return vol.toString();
+}
+
+function formatAmount(amt) {
+  if (amt >= 100000000) return (amt / 100000000).toFixed(2) + '亿';
+  if (amt >= 10000) return (amt / 10000).toFixed(0) + '万';
+  return amt.toString();
+}
+
+// ── 自选股 ────────────────────────────────────────────────────────────
+const WATCH_KEY = 'quantpro_watchlist';
+function getWatchlist() { return JSON.parse(localStorage.getItem(WATCH_KEY) || '[]'); }
+async function toggleWatch() {
+  let list = getWatchlist();
+  const idx = list.findIndex(s => s.code === code);
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    document.getElementById('watchBtn').textContent = '☆ 加自选';
+    try {
+      await safeFetch(`${API_BASE}/api/watchlist/remove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+    } catch (e) { console.warn('移除自选失败:', e); }
+  } else {
+    list.push({ code, name });
+    document.getElementById('watchBtn').textContent = '★ 已自选';
+    try {
+      await safeFetch(`${API_BASE}/api/watchlist/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, name })
+      });
+    } catch (e) { console.warn('添加自选失败:', e); }
+  }
+  localStorage.setItem(WATCH_KEY, JSON.stringify(list));
+}
+if (getWatchlist().find(s => s.code === code)) {
+  document.getElementById('watchBtn').textContent = '★ 已自选';
+}
+
+// ── AI公司分析 ────────────────────────────────────────────────────────────
+async function loadAIAnalysis() {
+  const container = document.getElementById('aiAnalysisContainer');
+  container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-4)"><div class="text-sm">AI分析中...</div></div>';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/stock/company_desc/${code}?name=${encodeURIComponent(name)}`);
+    
+    if (result && result.success && result.data) {
+      const analysis = result.data.analysis || {};
+      const latestNews = result.data.latest_news || [];
+      
+      let html = '';
+      
+      if (analysis.company_intro) {
+        html += `<div style="margin-bottom:12px;padding:12px;background:var(--surface-1);border-radius:8px;border-left:3px solid var(--orange)">
+          <div style="font-weight:600;margin-bottom:4px">公司简介</div>
+          <div style="color:var(--text-3);font-size:13px">${analysis.company_intro}</div>
+        </div>`;
+      }
+      
+      if (analysis.main_business) {
+        html += `<div style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:4px">主营业务</div><div style="color:var(--text-3);font-size:13px">${analysis.main_business}</div></div>`;
+      }
+      
+      if (analysis.advantages && analysis.advantages.length > 0) {
+        html += `<div style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:6px">[OK] 核心优势</div>`;
+        analysis.advantages.forEach(a => {
+          html += `<div style="padding:4px 8px;background:rgba(34,197,94,0.1);border-radius:4px;margin-bottom:4px;font-size:12px;color:var(--green)">${a}</div>`;
+        });
+        html += '</div>';
+      }
+      
+      if (analysis.risks && analysis.risks.length > 0) {
+        html += `<div style="margin-bottom:12px"><div style="font-weight:600;margin-bottom:6px">[!] 风险提示</div>`;
+        analysis.risks.forEach(r => {
+          html += `<div style="padding:4px 8px;background:rgba(239,68,68,0.1);border-radius:4px;margin-bottom:4px;font-size:12px;color:var(--red)">${r}</div>`;
+        });
+        html += '</div>';
+      }
+      
+      if (analysis.investment_rating) {
+        const ratingColor = analysis.investment_rating === '买入' ? 'var(--green)' : (analysis.investment_rating === '卖出' ? 'var(--red)' : 'var(--orange)');
+        html += `<div style="margin-bottom:12px;padding:10px;background:var(--surface-1);border-radius:8px">
+          <div class="row-between">
+            <span style="font-weight:600">投资评级</span>
+            <span style="font-weight:600;color:${ratingColor}">${analysis.investment_rating}</span>
+          </div>
+          ${analysis.target_price ? `<div style="font-size:12px;color:var(--text-3);margin-top:4px">目标价: ¥${analysis.target_price}</div>` : ''}
+        </div>`;
+      }
+      
+      if (latestNews.length > 0) {
+        html += `<div style="margin-top:12px"><div style="font-weight:600;margin-bottom:6px">近期新闻</div>`;
+        latestNews.slice(0, 3).forEach(n => {
+          html += `<div style="padding:8px;background:var(--surface-1);border-radius:6px;margin-bottom:6px;font-size:12px">${n.title}</div>`;
+        });
+        html += '</div>';
+      }
+      
+      if (!html) {
+        html = '<div style="text-align:center;padding:20px;color:var(--text-4)">暂无分析数据</div>';
+      }
+      
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-4)">获取AI分析失败</div>';
+    }
+  } catch (e) {
+    console.error('AI分析失败:', e);
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-4)">AI分析服务暂时不可用</div>';
+  }
+}
+
+// ── 从后端加载交易历史 ────────────────────────────────────────────────
+async function loadStockHistory() {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/trade/history`);
+    
+    if (result && result.success && result.data) {
+      return result.data.filter(r => r.code === code).slice(0, 8).map(t => ({
+        time: t.traded_at,
+        source: 'manual',
+        action: t.direction,
+        price: t.price,
+        qty: t.shares,
+        pnl: null
+      }));
+    }
+  } catch (e) {
+    console.warn('加载交易历史失败:', e);
+  }
+  // 回退到本地存储
+  const all = JSON.parse(localStorage.getItem('quantpro_history') || '[]');
+  return all.filter(r => r.code === code).slice(0, 8);
+}
+
+async function renderStockHistory() {
+  const tbody = document.getElementById('stockHistoryBody');
+  
+  // 显示 loading 状态
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" style="text-align:center;padding:40px;">
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <div style="width:24px;height:24px;border:2px solid var(--surface-3);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin-right:12px"></div>
+          <div style="color:var(--text-4);font-size:14px">加载交易历史...</div>
+        </div>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+      </td>
+    </tr>
+  `;
+  
+  const records = await loadStockHistory();
+  if (!records.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-sm" style="text-align:center;padding:20px">暂无该股票操作记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = records.map(r => {
+    const srcColor = r.source === 'model' ? 'var(--orange)' : '#818cf8';
+    const srcLabel = r.source === 'model' ? '模型' : '手动';
+    const actMap = { buy: '买入', sell: '卖出', signal: '信号' };
+    const actColor = r.action === 'buy' ? 'var(--green)' : r.action === 'sell' ? 'var(--red)' : 'var(--text-3)';
+    const pnlHtml = r.pnl !== null
+      ? `<span class="${r.pnl >= 0 ? 'text-green' : 'text-red'} font-mono-num">${r.pnl >= 0 ? '+' : ''}${r.pnl}</span>`
+      : '<span class="text-muted">—</span>';
+    return `<tr>
+      <td class="text-xs text-muted font-mono">${r.time ? r.time.slice(0,16) : '-'}</td>
+      <td><span style="color:${srcColor};font-size:12px;font-weight:600">${srcLabel}</span></td>
+      <td><span style="color:${actColor};font-weight:600;font-size:12px">${actMap[r.action] || r.action}</span></td>
+      <td class="font-mono-num">${r.price ? r.price.toFixed(2) : '-'}</td>
+      <td class="font-mono-num">${r.qty > 0 ? r.qty.toLocaleString() : '—'}</td>
+      <td>${pnlHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 页面初始化 ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('breadName').textContent = name;
+  document.getElementById('stockName').textContent = name;
+  document.getElementById('stockCode').textContent = code;
+  document.getElementById('klineTitle').textContent = name + ' A股K线';
+  
+  const kCanvasEl = document.getElementById('klineChart');
+  const vCanvasEl = document.getElementById('volChart');
+  if (kCanvasEl && vCanvasEl) {
+    initKlineChart(kCanvasEl, vCanvasEl);
+  }
+  await loadStockDetail();
+  renderStockHistory();
+  initKperiodButtons();
+  initAnalysisModal();
+  
+  // 每5秒刷新一次实时数据
+  let realtimeInterval = setInterval(refreshRealtimeData, 5000);
+  
+  // 页面卸载时清理定时器
+  window.addEventListener('beforeunload', () => {
+    clearInterval(realtimeInterval);
+  });
+});
+
+// ── 实时数据刷新 ───────────────────────────────────────────────────────
+async function refreshRealtimeData() {
+  try {
+    let apiCode = code;
+    let prefix = '';
+    
+    if (code.startsWith('sh') || code.startsWith('sz')) {
+      prefix = code.substring(0, 2);
+      apiCode = code.substring(2);
+    } else if (code.startsWith('6') || code.startsWith('9')) {
+      prefix = 'sh';
+    } else {
+      prefix = 'sz';
+    }
+    
+    const result = await safeFetch(`${API_BASE}/api/stock/realtime?codes=${prefix}${apiCode}`);
+    
+    // 处理不同的返回格式：数组或对象
+    let stockData = null;
+    if (result && result.success && result.data) {
+      if (Array.isArray(result.data) && result.data.length > 0) {
+        stockData = result.data[0];
+      } else if (typeof result.data === 'object') {
+        // 尝试获取以prefix+code为key的数据
+        const key = prefix + apiCode;
+        stockData = result.data[key] || result.data[apiCode] || Object.values(result.data)[0];
+      }
+    }
+    
+    if (stockData) {
+      const data = stockData;
+      
+      const price = data.now || data.price || 0;
+      const prevClose = data.close || data.prev_close || 0;
+      const changePct = data.change_pct || (prevClose > 0 ? ((price - prevClose) / prevClose * 100) : 0);
+      
+      if (price) {
+        const changeClass = changePct >= 0 ? 'text-red' : 'text-green';
+        const changeSign = changePct >= 0 ? '+' : '';
+        document.getElementById('stockPrice').textContent = price.toFixed(2);
+        document.getElementById('stockChange').innerHTML = `<span class="${changeClass}">${changeSign}${changePct.toFixed(2)}%</span>`;
+        document.getElementById('kBadge').textContent = `${changeSign}${changePct.toFixed(2)}%`;
+        document.getElementById('kBadge').className = `badge ${changePct >= 0 ? 'badge-red' : 'badge-green'}`;
+      }
+      
+      if (data.open) document.getElementById('dOpen').textContent = data.open.toFixed(2);
+      if (prevClose) document.getElementById('dPrevClose').textContent = prevClose.toFixed(2);
+      if (data.high) document.getElementById('dHigh').textContent = data.high.toFixed(2);
+      if (data.low) document.getElementById('dLow').textContent = data.low.toFixed(2);
+      if (data.volume) document.getElementById('dVol').textContent = formatVolume(data.volume);
+      if (data.amount) document.getElementById('dAmount').textContent = formatAmount(data.amount);
+      
+      if (data.high && data.low && prevClose) {
+        const amplitude = ((data.high - data.low) / prevClose * 100);
+        document.getElementById('dAmplitude').textContent = amplitude.toFixed(2) + '%';
+      }
+      
+      if (data.turnover !== undefined) {
+        const turnoverEl = document.getElementById('dTurnover');
+        if (data.turnover > 1) {
+          turnoverEl.textContent = formatAmount(data.turnover);
+        } else {
+          turnoverEl.textContent = (data.turnover * 100).toFixed(2) + '%';
+        }
+      }
+      // 量比
+      if (data.vol_ratio !== undefined) {
+        document.getElementById('dVolRatio').textContent = data.vol_ratio.toFixed(2);
+      }
+      
+      const tradingBadge = document.getElementById('kBadge');
+      if (tradingBadge && result.trading_time) {
+        tradingBadge.textContent = tradingBadge.textContent + ' ●';
+      }
+    }
+  } catch (e) {
+    console.warn('刷新实时数据失败:', e);
+  }
+}
+
+// ── K线图 ──────────────────────────────────────────────────────────────
+const dpr = window.devicePixelRatio || 1;
+const PAD = { l: 50, r: 70, t: 20, b: 30 };
+const VPAD = { l: 50, r: 70, t: 5, b: 10 };
+let kCanvas = null;
+let vCanvas = null;
+let kCtx = null;
+let vCtx = null;
+let KDATA = { day: [], week: [], month: [], '5m': [], '15m': [], '30m': [], '60m': [] };
+let currentPeriod = 'day';
+let currentData = [];
+let hoverIdx = -1;
+
+function parseCNDateTime(text) {
+  if (!text) return null;
+  const s = String(text).trim().replace('T', ' ').replace(/\//g, '-');
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})(?::\d{2})?$/);
+  if (!m) return null;
+  return new Date(`${m[1]}T${m[2]}:00`);
+}
+
+function normalizeKline(raw) {
+  return (raw || []).map(k => ({
+    date: k.date || k.time,
+    o: k.o !== undefined ? k.o : k.open,
+    h: k.h !== undefined ? k.h : k.high,
+    l: k.l !== undefined ? k.l : k.low,
+    c: k.c !== undefined ? k.c : k.close,
+    v: k.v !== undefined ? k.v : k.volume
+  }));
+}
+
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+}
+
+function getMonthKey(dateStr) {
+  return dateStr.substring(0, 7);
+}
+
+function aggregateKline(dailyData, period) {
+  if (!dailyData || dailyData.length === 0) return [];
+  if (period === 'day' || period === '5m') return dailyData;
+
+  const groups = [];
+  const groupMap = new Map();
+
+  for (const k of dailyData) {
+    const key = period === 'week' ? getWeekKey(k.date) : getMonthKey(k.date);
+    if (!groupMap.has(key)) {
+      const g = { date: key, o: k.o, h: k.h, l: k.l, c: k.c, v: k.v };
+      groupMap.set(key, g);
+      groups.push(g);
+    } else {
+      const g = groupMap.get(key);
+      g.h = Math.max(g.h, k.h);
+      g.l = Math.min(g.l, k.l);
+      g.c = k.c;
+      g.v += k.v;
+    }
+  }
+  return groups;
+}
+
+function initKlineChart(kCanvasEl, vCanvasEl) {
+  kCanvas = kCanvasEl;
+  vCanvas = vCanvasEl;
+  
+  kCtx = kCanvas.getContext('2d');
+  vCtx = vCanvas.getContext('2d');
+  
+  kCanvas.addEventListener('mousemove', onMouseMove);
+  kCanvas.addEventListener('mouseleave', onMouseLeave);
+  vCanvas.addEventListener('mousemove', onMouseMove);
+  vCanvas.addEventListener('mouseleave', onMouseLeave);
+}
+
+function setupCanvas(canvas, cssH) {
+  const parent = canvas.parentElement;
+  if (!parent) {
+    console.error('[setupCanvas] Canvas parent element not found');
+    return { w: 600, h: cssH, ctx: canvas.getContext('2d') };
+  }
+  const w = parent.offsetWidth;
+  canvas.width  = w * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.width  = w + 'px';
+  canvas.style.height = cssH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w, h: cssH, ctx };
+}
+
+function showKlineLoading() {
+  const loading = document.getElementById('klineLoading');
+  if (loading) {
+    loading.style.display = 'flex';
+    const text = arguments[0] || '加载K线数据...';
+    loading.innerHTML = `
+      <div style="text-align:center">
+        <div class="loading-spinner" style="width:32px;height:32px;margin:0 auto 12px"></div>
+        <div style="color:var(--text-4);font-size:14px">${text}</div>
+      </div>
+    `;
+  }
+}
+
+function hideKlineLoading() {
+  const loading = document.getElementById('klineLoading');
+  if (loading) {
+    loading.style.display = 'none';
+  }
+}
+
+function showKlineError(msg) {
+  const loading = document.getElementById('klineLoading');
+  if (loading) {
+    loading.style.display = 'flex';
+    loading.innerHTML = `
+      <div style="text-align:center">
+        <div style="color:var(--red);font-size:24px;margin-bottom:8px">!</div>
+        <div style="color:var(--text-3);font-size:14px">${msg || '暂无K线数据'}</div>
+      </div>
+    `;
+  }
+}
+
+function drawKline(data) {
+  if (!data || data.length === 0) {
+    showKlineError('暂无K线数据');
+    return;
+  }
+  
+  // 确保画布已初始化
+  if (!kCanvas || !vCanvas) {
+    const kCanvasEl = document.getElementById('klineChart');
+    const vCanvasEl = document.getElementById('volChart');
+    if (kCanvasEl && vCanvasEl) {
+      initKlineChart(kCanvasEl, vCanvasEl);
+    } else {
+      showKlineError('画布初始化失败');
+      return;
+    }
+  }
+  
+  hideKlineLoading();
+  
+  const PAD = { l: 50, r: 70, t: 20, b: 30 };
+  const VPAD = { l: 50, r: 70, t: 5, b: 10 };
+  
+  const baseW = (kCanvas.parentElement && kCanvas.parentElement.offsetWidth) || 600;
+  const mainH = Math.max(220, Math.min(300, Math.round(baseW * 0.42)));
+  const volH = Math.max(48, Math.min(72, Math.round(mainH * 0.2)));
+  const { w, h, ctx: kCtxLocal } = setupCanvas(kCanvas, mainH);
+  const { w: vw, h: vh, ctx: vCtxLocal } = setupCanvas(vCanvas, volH);
+  kCtx = kCtxLocal;
+  vCtx = vCtxLocal;
+  kCtx.clearRect(0, 0, w, h);
+  vCtx.clearRect(0, 0, vw, vh);
+  const cw = w - PAD.l - PAD.r;
+  const ch = h - PAD.t - PAD.b;
+  const barW = Math.max(1, cw / data.length);
+  const prices = data.flatMap(d => [d.h, d.l]);
+  const minP = Math.min(...prices);
+  const maxP = Math.max(...prices);
+  const pRange = maxP - minP || 1;
+  const pPad = pRange * 0.05;
+  const maxV = Math.max(...data.map(d => d.v));
+  function py(p) { return PAD.t + ch - ((p - minP + pPad) / (pRange + pPad * 2)) * ch; }
+  function px(i) { return PAD.l + i * barW + barW / 2; }
+  function vy(v) { return VPAD.t + (vh - VPAD.t - VPAD.b) * (1 - v / maxV); }
+
+  kCtx.strokeStyle = 'rgba(255,255,255,.04)';
+  kCtx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const p = minP - pPad + (pRange + pPad * 2) * (i / 5);
+    const y = py(p);
+    kCtx.beginPath(); kCtx.moveTo(PAD.l, y); kCtx.lineTo(PAD.l + cw, y); kCtx.stroke();
+    kCtx.fillStyle = '#52525b';
+    kCtx.font = '10px JetBrains Mono, monospace';
+    kCtx.textAlign = 'left';
+    kCtx.fillText(p.toFixed(2), PAD.l + cw + 6, y + 4);
+  }
+
+  data.forEach((d, i) => {
+    const x = px(i);
+    const up = d.c >= d.o;
+    const col = up ? '#ef4444' : '#22c55e';
+    const bw = Math.max(2, barW * 0.6);
+
+    kCtx.strokeStyle = col; kCtx.lineWidth = 1;
+    kCtx.beginPath(); kCtx.moveTo(x, py(d.h)); kCtx.lineTo(x, py(d.l)); kCtx.stroke();
+
+    const bodyTop = py(Math.max(d.o, d.c));
+    const bodyBot = py(Math.min(d.o, d.c));
+    const bodyH = Math.max(1, bodyBot - bodyTop);
+    kCtx.fillStyle = col;
+    kCtx.fillRect(x - bw / 2, bodyTop, bw, bodyH);
+  });
+
+  data.forEach((d, i) => {
+    const x = px(i);
+    const bw = Math.max(2, barW * 0.6);
+    const up = d.c >= d.o;
+    kCtx.fillStyle = up ? 'rgba(239,68,68,.5)' : 'rgba(34,197,94,.5)';
+    const top = vy(d.v);
+    kCtx.fillRect(x - bw / 2, top, bw, (vh - VPAD.b) - top);
+  });
+
+  vCtx.fillStyle = '#52525b';
+  vCtx.font = '10px JetBrains Mono, monospace';
+  vCtx.textAlign = 'left';
+  vCtx.fillText((maxV / 10000).toFixed(0) + '万', PAD.l + cw + 6, VPAD.t + 10);
+
+  function calcMA(period) {
+    const result = [];
+    for (let i = 0; i < data.length; i++) {
+      if (i < period - 1) { result.push(null); continue; }
+      let sum = 0;
+      for (let j = i - period + 1; j <= i; j++) sum += data[j].c;
+      result.push(sum / period);
+    }
+    return result;
+  }
+
+  const maLines = [
+    { period: 5, color: '#ffffff', label: 'MA5' },
+    { period: 10, color: '#facc15', label: 'MA10' },
+    { period: 20, color: '#a855f7', label: 'MA20' }
+  ];
+
+  maLines.forEach(ma => {
+    const values = calcMA(ma.period);
+    kCtx.beginPath();
+    kCtx.strokeStyle = ma.color;
+    kCtx.lineWidth = 1;
+    let started = false;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] === null) continue;
+      const x = px(i);
+      const y = py(values[i]);
+      if (!started) { kCtx.moveTo(x, y); started = true; }
+      else { kCtx.lineTo(x, y); }
+    }
+    kCtx.stroke();
+  });
+
+  // 绘制时间轴
+  const timeLabels = getTimeLabels(data, currentPeriod);
+  kCtx.fillStyle = '#52525b';
+  kCtx.font = '10px JetBrains Mono, monospace';
+  kCtx.textAlign = 'center';
+  timeLabels.forEach(label => {
+    kCtx.fillText(label.text, px(label.idx), h - 5);
+  });
+
+  if (hoverIdx >= 0) drawCrosshair(data, hoverIdx, w, h, cw, ch, barW, py, px);
+}
+
+function getTimeLabels(data, period) {
+  if (!data || data.length === 0) return [];
+  
+  const labels = [];
+  const total = data.length;
+  const step = Math.max(1, Math.floor(total / 6));
+  
+  for (let i = 0; i < total; i += step) {
+    const d = data[i];
+    if (!d || !d.date) continue;
+    
+    let text = '';
+    const dateStr = d.date;
+    
+    if (period === '5m' || period === '15m' || period === '30m' || period === '60m') {
+      // 分钟K线：显示时:分
+      if (dateStr.includes(' ')) {
+        const timePart = dateStr.split(' ')[1];
+        if (timePart) {
+          text = timePart.substring(0, 5);
+        }
+      } else if (dateStr.includes(':')) {
+        text = dateStr.substring(0, 5);
+      } else {
+        text = dateStr;
+      }
+    } else if (period === 'day') {
+      // 日K：显示月-日
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length >= 3) {
+          text = parts[1] + '-' + parts[2];
+        } else if (parts.length === 2) {
+          text = dateStr;
+        }
+      } else {
+        text = dateStr;
+      }
+    } else if (period === 'week') {
+      // 周K：显示月-日
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length >= 3) {
+          text = parts[1] + '-' + parts[2];
+        }
+      } else {
+        text = dateStr;
+      }
+    } else if (period === 'month') {
+      // 月K：显示年-月
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length >= 2) {
+          text = parts[0] + '-' + parts[1];
+        }
+      } else {
+        text = dateStr;
+      }
+    } else {
+      text = dateStr;
+    }
+    
+    labels.push({ idx: i, text: text });
+  }
+  
+  // 确保最后一个标签显示
+  if (total > 0 && (labels.length === 0 || labels[labels.length - 1].idx !== total - 1)) {
+    const lastD = data[total - 1];
+    if (lastD && lastD.date) {
+      let text = '';
+      if (period === '5m' || period === '15m' || period === '30m' || period === '60m') {
+        if (lastD.date.includes(' ')) {
+          const timePart = lastD.date.split(' ')[1];
+          text = timePart ? timePart.substring(0, 5) : lastD.date;
+        } else if (lastD.date.includes(':')) {
+          text = lastD.date.substring(0, 5);
+        } else {
+          text = lastD.date;
+        }
+      } else if (period === 'day' || period === 'week') {
+        const parts = lastD.date.split('-');
+        text = parts.length >= 3 ? parts[1] + '-' + parts[2] : lastD.date;
+      } else if (period === 'month') {
+        const parts = lastD.date.split('-');
+        text = parts.length >= 2 ? parts[0] + '-' + parts[1] : lastD.date;
+      }
+      labels.push({ idx: total - 1, text: text });
+    }
+  }
+  
+  return labels;
+}
+
+function drawCrosshair(data, idx, w, h, cw, ch, barW, py, px) {
+  const d = data[idx];
+  const x = px(idx);
+  const cy = py((d.o + d.c) / 2);
+
+  kCtx.save();
+  kCtx.strokeStyle = 'rgba(255,255,255,.2)';
+  kCtx.lineWidth = 1;
+  kCtx.setLineDash([4, 4]);
+  kCtx.beginPath(); kCtx.moveTo(x, PAD.t); kCtx.lineTo(x, PAD.t + ch); kCtx.stroke();
+  kCtx.beginPath(); kCtx.moveTo(PAD.l, cy); kCtx.lineTo(PAD.l + cw, cy); kCtx.stroke();
+  kCtx.restore();
+
+  const priceLabel = ((d.o + d.c) / 2).toFixed(2);
+  kCtx.fillStyle = 'rgba(249,115,22,.9)';
+  kCtx.fillRect(PAD.l + cw + 2, cy - 9, 52, 18);
+  kCtx.fillStyle = '#fff';
+  kCtx.font = '10px JetBrains Mono, monospace';
+  kCtx.textAlign = 'center';
+  kCtx.fillText(priceLabel, PAD.l + cw + 28, cy + 4);
+
+  kCtx.fillStyle = 'rgba(249,115,22,.9)';
+  const dateText = d.date;
+  const lw = dateText.length <= 5 ? 50 : (dateText.length <= 8 ? 65 : 80);
+  const labelY = PAD.t + ch + 4;
+  kCtx.fillRect(x - lw / 2, labelY, lw, 18);
+  kCtx.fillStyle = '#fff';
+  kCtx.fillText(dateText, x, labelY + 13);
+
+  const chg = d.c - d.o;
+  const chgPct = (chg / d.o * 100).toFixed(2);
+  document.getElementById('ohlcO').textContent = d.o.toFixed(2);
+  document.getElementById('ohlcH').textContent = d.h.toFixed(2);
+  document.getElementById('ohlcL').textContent = d.l.toFixed(2);
+  document.getElementById('ohlcC').textContent = d.c.toFixed(2);
+  document.getElementById('ohlcV').textContent = (d.v / 10000).toFixed(0) + '万';
+  const chgEl = document.getElementById('ohlcChg');
+  chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + ' (' + (chg >= 0 ? '+' : '') + chgPct + '%)';
+  chgEl.style.color = chg >= 0 ? 'var(--red)' : 'var(--green)';
+}
+
+function getHoverIdx(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const cw = canvas.offsetWidth - PAD.l - PAD.r;
+  const barW = cw / currentData.length;
+  return Math.max(0, Math.min(currentData.length - 1, Math.floor((mx - PAD.l) / barW)));
+}
+
+function onMouseMove(e) {
+  if (!kCanvas || !currentData || currentData.length === 0) return;
+  hoverIdx = getHoverIdx(e, kCanvas);
+  drawKline(currentData);
+}
+
+function onMouseLeave() {
+  if (!currentData || currentData.length === 0) return;
+  hoverIdx = -1;
+  drawKline(currentData);
+  ['ohlcO','ohlcH','ohlcL','ohlcC','ohlcV','ohlcChg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+}
+
+// 初始事件绑定
+if (kCanvas) {
+  kCanvas.addEventListener('mousemove', onMouseMove);
+  kCanvas.addEventListener('mouseleave', onMouseLeave);
+}
+if (vCanvas) {
+  vCanvas.addEventListener('mousemove', onMouseMove);
+  vCanvas.addEventListener('mouseleave', onMouseLeave);
+}
+
+function initKperiodButtons() {
+  const buttons = document.querySelectorAll('.kperiod-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.kperiod-btn').forEach(b => b.classList.remove('kperiod-active'));
+      btn.classList.add('kperiod-active');
+      const period = btn.dataset.p;
+      currentPeriod = period;
+      
+      if (period === 'week' || period === 'month') {
+        if (KDATA.day && KDATA.day.length > 0) {
+          const agg = aggregateKline(KDATA.day, period);
+          const limit = period === 'week' ? 52 : 24;
+          KDATA[period] = agg.length > limit ? agg.slice(-limit) : agg;
+          currentData = KDATA[period];
+          hoverIdx = -1;
+          drawKline(currentData);
+          return;
+        }
+        showKlineError('请先加载日线数据');
+        return;
+      }
+      
+      if (KDATA[period] && KDATA[period].length > 0) {
+        currentData = KDATA[period];
+        hoverIdx = -1;
+        drawKline(currentData);
+        return;
+      }
+      
+      try {
+        showKlineLoading('正在获取数据...');
+        const result = await fetchDetailWithPolling(period, 10, 1000);
+        
+        if (result && result.success && result.data && result.data.kline && result.data.kline.length > 0) {
+          let klineData = normalizeKline(result.data.kline);
+          
+          const limitMap = { '5m': 240, 'day': 120 };
+          const limit = limitMap[period] || 120;
+          if (klineData.length > limit) {
+            klineData = klineData.slice(-limit);
+          }
+          
+          KDATA[period] = klineData;
+          currentData = KDATA[period];
+          hoverIdx = -1;
+          drawKline(currentData);
+        } else {
+          showKlineError((result && result.data && result.data.kline_message) || '该周期暂无K线数据');
+        }
+      } catch (e) {
+        console.warn('加载K线数据失败:', e);
+        showKlineError('K线加载失败');
+      }
+    });
+  });
+}
+
+window.addEventListener('resize', () => {
+  if (currentData && currentData.length > 0) {
+    drawKline(currentData);
+  }
+});
+
+// ── 卡片光效 ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.card, .stat-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+});
+
+// ── AI分析功能 ──────────────────────────────────────────────────────────
+async function runAIAnalysis() {
+  const btn = document.getElementById('aiAnalyzeBtn');
+  const btnText = document.getElementById('aiBtnText');
+  const placeholder = document.getElementById('aiAnalysisPlaceholder');
+  const loading = document.getElementById('aiAnalysisLoading');
+  const result = document.getElementById('aiAnalysisResult');
+  const analysisText = document.getElementById('aiAnalysisText');
+  const analysisTime = document.getElementById('aiAnalysisTime');
+  
+  btn.disabled = true;
+  btnText.textContent = '分析中...';
+  placeholder.style.display = 'none';
+  loading.style.display = 'block';
+  result.style.display = 'none';
+  
+  try {
+    const resp = await safeFetch(`${API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: CONFIG.AI_API_TIMEOUT,
+      body: JSON.stringify({ 
+        code: code,
+        name: name,
+        include_technical: true,
+        include_fundamental: true
+      })
+    });
+    
+    const data = await resp.json();
+    
+    loading.style.display = 'none';
+    
+    if (data.success && data.data) {
+      let text = '';
+      if (data.data.summary) text += '【综合评价】\n' + data.data.summary + '\n\n';
+      if (data.data.technical) text += '【技术分析】\n' + data.data.technical + '\n\n';
+      if (data.data.fundamental) text += '【基本面分析】\n' + data.data.fundamental + '\n\n';
+      if (data.data.risk) text += '【风险提示】\n' + data.data.risk + '\n\n';
+      if (data.data.suggestion) text += '【操作建议】\n' + data.data.suggestion;
+      if (data.data.analysis) text = data.data.analysis;
+      
+      analysisText.textContent = text || '暂无分析结果';
+      analysisTime.textContent = new Date().toLocaleString('zh-CN');
+      result.style.display = 'block';
+    } else {
+      analysisText.textContent = '分析失败: ' + (data.error || '请稍后重试');
+      result.style.display = 'block';
+    }
+  } catch (e) {
+    loading.style.display = 'none';
+    analysisText.textContent = '连接失败: ' + e.message;
+    result.style.display = 'block';
+  }
+  
+  btn.disabled = false;
+  btnText.textContent = '重新分析';
+}
+
+async function analyzeStock() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.textContent = 'AI分析中...';
+  
+  // 创建分析结果弹窗
+  let modal = document.getElementById('aiAnalysisModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'aiAnalysisModal';
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  modal.innerHTML = `
+    <div style="background:var(--surface-2);border-radius:16px;width:90%;max-width:700px;max-height:80vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="padding:20px;border-bottom:1px solid var(--border-1);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:600">AI分析：${name} (${code})</div>
+        <button onclick="closeAnalysisModal()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:20px">✕</button>
+      </div>
+      <div id="analysisContent" style="padding:20px;max-height:60vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:center;padding:40px">
+          <div class="loading-spinner" style="width:32px;height:32px;margin-right:12px"></div>
+          <span style="color:var(--text-4)">AI正在分析中...</span>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  
+  try {
+    const resp = await safeFetch(`${API_BASE}/api/ai/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: CONFIG.AI_API_TIMEOUT,
+      body: JSON.stringify({ 
+        code: code,
+        name: name,
+        include_technical: true,
+        include_fundamental: true
+      })
+    });
+    
+    const result = await resp.json();
+    const content = document.getElementById('analysisContent');
+    
+    if (result.success && result.data) {
+      const data = result.data;
+      let html = '';
+      
+      if (data.summary) {
+        html += `<div style="margin-bottom:20px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--orange)">综合评价</div>
+          <div style="line-height:1.8;color:var(--text-2)">${data.summary}</div>
+        </div>`;
+      }
+      
+      if (data.technical) {
+        html += `<div style="margin-bottom:20px">
+          <div style="font-weight:600;margin-bottom:8px">技术分析</div>
+          <div style="line-height:1.8;color:var(--text-2)">${data.technical}</div>
+        </div>`;
+      }
+      
+      if (data.fundamental) {
+        html += `<div style="margin-bottom:20px">
+          <div style="font-weight:600;margin-bottom:8px">基本面分析</div>
+          <div style="line-height:1.8;color:var(--text-2)">${data.fundamental}</div>
+        </div>`;
+      }
+      
+      if (data.risk) {
+        html += `<div style="margin-bottom:20px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--red)">风险提示</div>
+          <div style="line-height:1.8;color:var(--text-2)">${data.risk}</div>
+        </div>`;
+      }
+      
+      if (data.suggestion) {
+        html += `<div style="padding:16px;background:var(--surface-1);border-radius:12px;border:1px solid var(--border-1)">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--green)">操作建议</div>
+          <div style="line-height:1.8;color:var(--text-2)">${data.suggestion}</div>
+        </div>`;
+      }
+      
+      if (data.analysis) {
+        // 如果返回的是纯文本分析
+        html = `<div style="line-height:1.8;color:var(--text-2);white-space:pre-wrap">${data.analysis}</div>`;
+      }
+      
+      content.innerHTML = html || '<div style="text-align:center;color:var(--text-4)">暂无分析结果</div>';
+    } else {
+      content.innerHTML = `<div style="text-align:center;color:var(--text-4)">
+        <div style="margin-bottom:8px">分析失败</div>
+        <div style="font-size:12px">${result.error || '请稍后重试'}</div>
+      </div>`;
+    }
+  } catch (e) {
+    document.getElementById('analysisContent').innerHTML = `
+      <div style="text-align:center;color:var(--text-4)">
+        <div style="margin-bottom:8px">连接失败</div>
+        <div style="font-size:12px">请检查后端服务是否正常运行</div>
+      </div>
+    `;
+  }
+  
+  btn.disabled = false;
+  btn.textContent = 'AI分析';
+}
+
+function closeAnalysisModal() {
+  const modal = document.getElementById('aiAnalysisModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function initAnalysisModal() {
+  document.getElementById('aiAnalysisModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeAnalysisModal();
+  });
+}
+</script>
+</body>
+</html>

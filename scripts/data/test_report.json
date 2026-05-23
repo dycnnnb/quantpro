@@ -1,0 +1,244 @@
+{
+  "timestamp": "2026-05-22T21:06:15.137907",
+  "passed": 47,
+  "warned": 0,
+  "failed": 0,
+  "total": 47,
+  "results": [
+    {
+      "name": "API 健康检查",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 系统状态",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 股票列表",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 股票详情(茅台)",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 股票搜索",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 实时行情",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 日线数据",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 最新新闻",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 训练状态",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 因子库",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 训练报告",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 模型列表",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 大盘指数",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 市场概览",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 组合概览",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 回测历史",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "API 操作日志",
+      "status": "PASS",
+      "detail": "status=200"
+    },
+    {
+      "name": "页面 首页",
+      "status": "PASS",
+      "detail": "title=QuantPro — 首页"
+    },
+    {
+      "name": "页面 A股市场",
+      "status": "PASS",
+      "detail": "title=市场 — QuantPro"
+    },
+    {
+      "name": "页面 股票详情(茅台)",
+      "status": "PASS",
+      "detail": "title=QuantPro — 股票详情"
+    },
+    {
+      "name": "页面 持仓管理",
+      "status": "PASS",
+      "detail": "title=持仓管理 — QuantPro"
+    },
+    {
+      "name": "页面 回测",
+      "status": "PASS",
+      "detail": "title=回测 — QuantPro"
+    },
+    {
+      "name": "页面 模型训练",
+      "status": "PASS",
+      "detail": "title=模型训练 — QuantPro"
+    },
+    {
+      "name": "页面 AI助手",
+      "status": "PASS",
+      "detail": "title=QuantPro — AI助手"
+    },
+    {
+      "name": "页面 资讯中心",
+      "status": "PASS",
+      "detail": "title=QuantPro — 资讯中心"
+    },
+    {
+      "name": "页面 每日讯息",
+      "status": "PASS",
+      "detail": "title=每日讯息 — QuantPro"
+    },
+    {
+      "name": "页面 操作历史",
+      "status": "PASS",
+      "detail": "title=QuantPro — 操作历史"
+    },
+    {
+      "name": "页面 设置",
+      "status": "PASS",
+      "detail": "title=QuantPro — 设置"
+    },
+    {
+      "name": "股票名称显示",
+      "status": "PASS",
+      "detail": "name=贵州茅台"
+    },
+    {
+      "name": "股票价格显示",
+      "status": "PASS",
+      "detail": "price=1290.20"
+    },
+    {
+      "name": "涨跌幅显示",
+      "status": "PASS",
+      "detail": "change=-1.59%"
+    },
+    {
+      "name": "K线图Canvas",
+      "status": "PASS",
+      "detail": "canvas元素存在"
+    },
+    {
+      "name": "pulse-dot已删除",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "AI公司分析已删除",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "股票列表加载",
+      "status": "PASS",
+      "detail": "rows=52"
+    },
+    {
+      "name": "市场筛选按钮",
+      "status": "PASS",
+      "detail": "沪A/深A按钮存在"
+    },
+    {
+      "name": "搜索框",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "训练启动按钮",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "训练模式选择",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Alpha158开关",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "训练控制台",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "因子库展示",
+      "status": "PASS",
+      "detail": "显示110个因子"
+    },
+    {
+      "name": "股票名称(茅台)",
+      "status": "PASS",
+      "detail": "name=贵州茅台"
+    },
+    {
+      "name": "K线数据",
+      "status": "PASS",
+      "detail": "bars=120"
+    },
+    {
+      "name": "K线字段完整性",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "涨跌幅数据",
+      "status": "PASS",
+      "detail": "change_pct=0.21"
+    },
+    {
+      "name": "因子库数量",
+      "status": "PASS",
+      "detail": "total=130"
+    }
+  ]
+}

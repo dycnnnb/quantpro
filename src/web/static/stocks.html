@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>市场 — QuantPro</title>
+<link rel="stylesheet" href="styles.css">
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html" class="active">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">A股市场</h1>
+      <p class="page-sub" id="pageSubtitle">A股</p>
+    </div>
+    <div class="row gap-12">
+      <input class="input" style="width:240px" id="searchInput" placeholder="搜索代码或名称...">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px">
+    <button class="type-tab active" data-type="stock">股票</button>
+    <!-- ETF和基金功能正在开发中
+    <button class="type-tab" data-type="etf">ETF</button>
+    <button class="type-tab" data-type="fund">基金</button>
+    -->
+  </div>
+  <style>
+  .type-tab {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--surface-3);
+    color: var(--text-3);
+    border: 1px solid var(--border-2);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .type-tab:hover { background: var(--surface-4); }
+  .type-tab.active {
+    background: var(--orange);
+    color: #fff;
+    border-color: var(--orange);
+  }
+  </style>
+
+  <div id="stockSection">
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="gainers">上涨</button>
+      <button class="filter-btn" data-filter="losers">下跌</button>
+      <span style="width:1px;background:var(--border-2);margin:0 4px"></span>
+      <button class="filter-btn market-btn active" data-market="">全部市场</button>
+      <button class="filter-btn market-btn" data-market="sh">沪A</button>
+      <button class="filter-btn market-btn" data-market="sz">深A</button>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>最新价</th>
+            <th>涨跌幅</th>
+            <th>涨跌额</th>
+            <th>成交量</th>
+            <th>成交额</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="stockTableBody">
+          <tr><td colspan="7" style="text-align:center;padding:40px">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="row-between" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-1)">
+      <span class="text-sm text-muted" id="pageInfo">共 0 条</span>
+      <div class="row gap-6" id="pagination"></div>
+    </div>
+  </div>
+
+  <div id="etfSection" style="display:none">
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>类型</th>
+            <th>最新价</th>
+            <th>涨跌幅</th>
+            <th>跟踪指数</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="etfTableBody">
+          <tr><td colspan="6" style="text-align:center;padding:40px">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="fundSection" style="display:none">
+    <div class="card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>类型</th>
+            <th>净值</th>
+            <th>涨跌幅</th>
+            <th>基金经理</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="fundTableBody">
+          <tr><td colspan="6" style="text-align:center;padding:40px">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+let currentType = 'stock';
+let currentPage = 1;
+let totalPages = 1;
+let totalStocks = 0;
+let currentMarket = '';
+const PAGE_SIZE = 50;
+
+function switchType(type) {
+  currentType = type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.type-tab[data-type="${type}"]`).classList.add('active');
+  
+  document.getElementById('stockSection').style.display = type === 'stock' ? 'block' : 'none';
+  document.getElementById('etfSection').style.display = type === 'etf' ? 'block' : 'none';
+  document.getElementById('fundSection').style.display = type === 'fund' ? 'block' : 'none';
+  
+  loadData();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.type-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      switchType(this.dataset.type);
+    });
+  });
+
+  document.querySelectorAll('.filter-btn:not(.market-btn)').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn:not(.market-btn)').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      loadData(this.dataset.filter);
+    });
+  });
+
+  document.querySelectorAll('.market-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.market-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      currentMarket = this.dataset.market;
+      currentPage = 1;
+      loadData();
+    });
+  });
+
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    const keyword = e.target.value.trim();
+    if (keyword.length > 0) {
+      searchData(keyword);
+    } else {
+      loadData();
+    }
+  });
+
+  // 页面初始化时自动切换到“股票”类型，触发一次数据加载
+  switchType('stock');
+});
+
+async function loadData(filter = 'all') {
+  if (currentType === 'stock') {
+    await loadStocks(filter);
+  } else if (currentType === 'etf') {
+    await loadEtfs();
+  } else {
+    await loadFunds();
+  }
+}
+
+async function loadStocks(filter = 'all') {
+  const tbody = document.getElementById('stockTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px">Loading...</td></tr>';
+  
+  try {
+    const marketParam = currentMarket ? `&market=${currentMarket}` : '';
+    const url = `${API_BASE}/api/stock/list?filter=${filter}&limit=${PAGE_SIZE}&page=${currentPage}${marketParam}`;
+    const result = await safeFetch(url);
+    
+    if (result && result.success) {
+      currentPage = result.page || 1;
+      totalPages = result.total_pages || 1;
+      totalStocks = result.total || 0;
+
+      if (result.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">暂无数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = result.data.map(s => `
+        <tr onclick="window.location.href='stock-detail.html?code=${s.code}&name=${encodeURIComponent(s.name)}'" style="cursor:pointer">
+          <td>
+            <div class="font-semibold">${s.name}</div>
+            <div class="text-xs text-muted font-mono">${s.code}</div>
+          </td>
+          <td class="font-mono">${s.price ? s.price.toFixed(2) : '--'}</td>
+          <td class="font-mono ${s.change_pct >= 0 ? 'text-green' : 'text-red'}">${s.change_pct >= 0 ? '+' : ''}${s.change_pct ? s.change_pct.toFixed(2) : '0.00'}%</td>
+          <td class="font-mono ${s.change >= 0 ? 'text-green' : 'text-red'}">${s.change >= 0 ? '+' : ''}${s.change ? s.change.toFixed(2) : '0.00'}</td>
+          <td class="font-mono text-muted">${formatVolume(s.volume)}</td>
+          <td class="font-mono text-muted">${formatAmount(s.amount)}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addToWatchlist('${s.code}','${s.name}')">加自选</button></td>
+        </tr>
+      `).join('');
+
+      updatePagination();
+    } else {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">暂无股票数据，请检查后端服务</td></tr>';
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">暂无股票数据，请检查后端服务</td></tr>';
+  }
+}
+
+async function loadEtfs() {
+  const tbody = document.getElementById('etfTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">Loading...</td></tr>';
+  
+  try {
+    const url = `${API_BASE}/api/etf/list?limit=100`;
+    const result = await safeFetch(url);
+    
+    if (result && result.success) {
+      if (result.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = result.data.map(e => `
+        <tr onclick="window.location.href='stock-detail.html?code=${e.code}&name=${encodeURIComponent(e.name)}'" style="cursor:pointer">
+          <td>
+            <div class="font-semibold">${e.name}</div>
+            <div class="text-xs text-muted font-mono">${e.code}</div>
+          </td>
+          <td><span class="badge">${e.type || 'ETF'}</span></td>
+          <td class="font-mono">${e.price ? e.price.toFixed(3) : '--'}</td>
+          <td class="font-mono ${e.change_pct >= 0 ? 'text-green' : 'text-red'}">${e.change_pct >= 0 ? '+' : ''}${e.change_pct ? e.change_pct.toFixed(2) : '0.00'}%</td>
+          <td class="text-muted">${e.track || '--'}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addToWatchlist('${e.code}','${e.name}')">加自选</button></td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无ETF数据，请检查后端服务</td></tr>';
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无ETF数据，请检查后端服务</td></tr>';
+  }
+}
+
+async function loadFunds() {
+  const tbody = document.getElementById('fundTableBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">Loading...</td></tr>';
+  
+  try {
+    const result = await safeFetch(`${API_BASE}/api/fund/list?limit=100`);
+    
+    if (result && result.success) {
+      if (result.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无数据</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = result.data.map(f => `
+        <tr onclick="window.location.href='fund-detail.html?code=${f.code}&name=${encodeURIComponent(f.name)}'" style="cursor:pointer">
+          <td>
+            <div class="font-semibold">${f.name}</div>
+            <div class="text-xs text-muted font-mono">${f.code}</div>
+          </td>
+          <td><span class="badge">${f.type || '基金'}</span></td>
+          <td class="font-mono">${f.nav ? f.nav.toFixed(4) : '--'}</td>
+          <td class="font-mono ${f.change_pct >= 0 ? 'text-green' : 'text-red'}">${f.change_pct >= 0 ? '+' : ''}${f.change_pct ? f.change_pct.toFixed(2) : '0.00'}%</td>
+          <td class="text-muted">${f.manager || '--'}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addToWatchlist('${f.code}','${f.name}')">加自选</button></td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无基金数据，请检查后端服务</td></tr>';
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-4)">暂无基金数据，请检查后端服务</td></tr>';
+  }
+}
+
+async function searchData(keyword) {
+  if (currentType === 'stock') {
+    const tbody = document.getElementById('stockTableBody');
+    try {
+      const result = await safeFetch(`${API_BASE}/api/stock/search?keyword=${encodeURIComponent(keyword)}`);
+      if (result && result.success && result.data.length > 0) {
+        tbody.innerHTML = result.data.map(s => `
+          <tr onclick="window.location.href='stock-detail.html?code=${s.code}&name=${encodeURIComponent(s.name)}'" style="cursor:pointer">
+            <td>
+              <div class="font-semibold">${s.name}</div>
+              <div class="text-xs text-muted font-mono">${s.code}</div>
+            </td>
+            <td class="font-mono">${s.price ? s.price.toFixed(2) : '--'}</td>
+            <td colspan="5"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();addToWatchlist('${s.code}','${s.name}')">加自选</button></td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">未找到结果</td></tr>';
+      }
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4)">搜索失败</td></tr>';
+    }
+  }
+}
+
+function updatePagination() {
+  document.getElementById('pageInfo').textContent = `共 ${totalStocks.toLocaleString()} 条，第 ${currentPage}/${totalPages} 页`;
+  
+  const pagination = document.getElementById('pagination');
+  let html = `<button class="btn btn-ghost btn-sm" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+  
+  const startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, currentPage + 2);
+  
+  for (let i = startPage; i <= endPage; i++) {
+    const active = i === currentPage ? 'style="background:var(--orange);color:#fff;border-color:var(--orange)"' : '';
+    html += `<button class="btn btn-ghost btn-sm" ${active} onclick="goToPage(${i})">${i}</button>`;
+  }
+  
+  html += `<button class="btn btn-ghost btn-sm" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+  pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  loadData();
+}
+
+function formatVolume(vol) {
+  if (!vol) return '--';
+  if (vol >= 100000000) return (vol / 100000000).toFixed(2) + '亿';
+  if (vol >= 10000) return (vol / 10000).toFixed(0) + '万';
+  return vol.toString();
+}
+
+function formatAmount(amt) {
+  if (!amt) return '--';
+  if (amt >= 100000000) return (amt / 100000000).toFixed(2) + '亿';
+  if (amt >= 10000) return (amt / 10000).toFixed(0) + '万';
+  return amt.toString();
+}
+
+async function addToWatchlist(code, name) {
+  try {
+    const result = await safeFetch(`${API_BASE}/api/watchlist/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, name })
+    });
+    if (result && result.success) {
+      Utils.showToast(`${name} 已添加到自选`, 'success');
+    }
+  } catch (e) {
+    const watchlist = JSON.parse(localStorage.getItem('quantpro_watchlist') || '[]');
+    if (!watchlist.find(s => s.code === code)) {
+      watchlist.push({ code, name });
+      localStorage.setItem('quantpro_watchlist', JSON.stringify(watchlist));
+      Utils.showToast(`${name} 已添加到自选`, 'success');
+    }
+  }
+}
+</script>
+</body>
+</html>

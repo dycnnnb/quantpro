@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 操作历史</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ── 自定义下拉框样式 ──────────────────────────────────────── */
+.custom-select {
+  position: relative;
+  width: 120px;
+}
+.custom-select select {
+  width: 100%;
+  height: 36px;
+  padding: 0 36px 0 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-1);
+  font-size: 13px;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.custom-select select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(249,115,22,.1);
+  outline: none;
+}
+.custom-select select option {
+  background: var(--surface-2);
+  color: var(--text-1);
+  padding: 8px 12px;
+}
+.custom-select::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--text-3);
+  pointer-events: none;
+}
+.custom-select:hover::after {
+  border-top-color: var(--orange);
+}
+</style>
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html">资讯</a>
+    <a href="history.html" class="active">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="page-header row-between">
+    <div>
+      <h1 class="page-title">操作历史</h1>
+      <p class="page-sub">模型操作 · 手动操作 · 完整记录</p>
+    </div>
+    <div class="row gap-8">
+      <button class="btn btn-ghost btn-sm" onclick="exportHistory()">导出记录</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ 手动记录</button>
+    </div>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="grid-4" style="margin-bottom:20px" id="statsContainer">
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">总操作次数</div>
+        <div class="stat-value" id="totalOps">—</div>
+        <div class="stat-change" style="color:var(--text-3)">本月累计</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">模型操作</div>
+        <div class="stat-value text-orange" id="modelOps">—</div>
+        <div class="stat-change up" id="modelOpsRate">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">手动操作</div>
+        <div class="stat-value" id="manualOps">—</div>
+        <div class="stat-change" style="color:var(--text-3)" id="manualOpsRate">—</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">操作胜率</div>
+        <div class="stat-value text-green" id="winRate">—</div>
+        <div class="stat-change up">↑ 盈利操作占比</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选栏 -->
+  <div class="card" style="margin-bottom:16px;padding:16px 20px">
+    <div class="row gap-12" style="flex-wrap:wrap">
+      <div class="row gap-6" id="typeFilter">
+        <button class="btn btn-ghost btn-sm filter-btn active" data-type="all">全部</button>
+        <button class="btn btn-ghost btn-sm filter-btn" data-type="model">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin-right:5px;vertical-align:middle"></span>模型操作
+        </button>
+        <button class="btn btn-ghost btn-sm filter-btn" data-type="manual">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#818cf8;margin-right:5px;vertical-align:middle"></span>手动操作
+        </button>
+      </div>
+      <div class="row gap-6" id="actionFilter">
+        <button class="btn btn-ghost btn-sm action-btn active" data-action="all">全部操作</button>
+        <button class="btn btn-ghost btn-sm action-btn" data-action="buy">买入</button>
+        <button class="btn btn-ghost btn-sm action-btn" data-action="sell">卖出</button>
+        <button class="btn btn-ghost btn-sm action-btn" data-action="signal">信号</button>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <input class="input" id="searchInput" style="width:200px" placeholder="搜索股票名称/代码...">
+        <div class="custom-select">
+          <select id="dateFilter">
+            <option value="all">全部时间</option>
+            <option value="today">今天</option>
+            <option value="week">本周</option>
+            <option value="month" selected>本月</option>
+            <option value="3month">近3月</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史记录表 -->
+  <div class="card">
+    <div class="table-wrap">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th style="width:160px">时间</th>
+            <th style="width:80px">来源</th>
+            <th style="width:80px">操作</th>
+            <th>股票</th>
+            <th style="width:90px">价格</th>
+            <th style="width:90px">数量</th>
+            <th style="width:100px">金额</th>
+            <th style="width:100px">盈亏</th>
+            <th>策略/备注</th>
+            <th style="width:60px">状态</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+        </tbody>
+      </table>
+    </div>
+    <div class="row-between" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-1)">
+      <span class="text-sm text-muted" id="pageInfo">共 0 条</span>
+      <div class="row gap-6" id="pagination"></div>
+    </div>
+  </div>
+</main>
+
+<!-- 手动记录弹窗 -->
+<div id="addModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div class="card" style="width:480px;padding:28px;position:relative">
+    <div class="row-between" style="margin-bottom:20px">
+      <div class="card-title">添加手动操作记录</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeAddModal()" style="padding:4px 8px;font-size:16px">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">操作类型</div>
+          <select class="input" id="m_action" style="width:100%">
+            <option value="buy">买入</option>
+            <option value="sell">卖出</option>
+            <option value="signal">信号记录</option>
+          </select>
+        </div>
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">股票代码</div>
+          <input class="input" id="m_code" placeholder="如 000001" style="width:100%">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">股票名称</div>
+          <input class="input" id="m_name" placeholder="如 平安银行" style="width:100%">
+        </div>
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">操作时间</div>
+          <input class="input" id="m_time" type="datetime-local" style="width:100%">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">价格 (¥)</div>
+          <input class="input" id="m_price" type="number" step="0.01" placeholder="0.00" style="width:100%">
+        </div>
+        <div>
+          <div class="text-sm text-muted" style="margin-bottom:6px">数量 (股)</div>
+          <input class="input" id="m_qty" type="number" placeholder="0" style="width:100%">
+        </div>
+      </div>
+      <div>
+        <div class="text-sm text-muted" style="margin-bottom:6px">备注</div>
+        <input class="input" id="m_note" placeholder="操作原因、策略依据..." style="width:100%">
+      </div>
+    </div>
+    <div class="row gap-8" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" onclick="closeAddModal()">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="saveManualRecord()">保存记录</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+
+// ── 从后端加载交易历史 ──────────────────────────────────────────────────
+async function loadHistoryFromAPI() {
+  const tbody = document.getElementById('historyBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center;padding:20px;color:var(--text-4)">
+          <div style="margin-bottom:10px">加载操作历史中...</div>
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const url = `${API_BASE}/api/trade/history`;
+    const result = await safeFetch(url);
+
+    if (result && result.success && result.data) {
+      return result.data.map(t => ({
+        id: t.id || Date.now(),
+        time: t.traded_at || t.time,
+        source: (t.source || 'manual').toLowerCase() === 'model' ? 'model' : 'manual',
+        action: (t.direction || t.action || '').toLowerCase(),
+        code: t.code,
+        name: t.name,
+        price: t.price,
+        qty: t.shares || t.qty,
+        amount: t.amount || (t.price * (t.shares || t.qty)),
+        pnl: t.pnl || null,
+        strategy: t.strategy || '',
+        status: t.status === 'ok' ? '成交' : (t.status || '成交'),
+        note: t.note || ''
+      }));
+    }
+  } catch (e) {
+    console.warn('从后端加载交易历史失败:', e);
+  }
+  return loadHistoryFromLocal();
+}
+
+// ── 本地存储 ────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'quantpro_history';
+
+function loadHistoryFromLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+function saveHistory(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ── 状态 ──────────────────────────────────────────────────────────────
+let allData = [];
+let filtered = [];
+let currentPage = 1;
+const PAGE_SIZE = 10;
+let activeType = 'all', activeAction = 'all';
+
+// ── 渲染统计 ──────────────────────────────────────────────────────────
+function renderStats() {
+  const total = allData.length;
+  const modelCount = allData.filter(r => r.source === 'model').length;
+  const manualCount = allData.filter(r => r.source === 'manual').length;
+  const pnlRecords = allData.filter(r => r.pnl !== null);
+  const wins = pnlRecords.filter(r => r.pnl > 0).length;
+  const winRate = pnlRecords.length ? Math.round(wins / pnlRecords.length * 100) : 0;
+
+  document.getElementById('totalOps').textContent = total;
+  document.getElementById('modelOps').textContent = modelCount;
+  document.getElementById('modelOpsRate').textContent = total > 0 ? `↑ 占比 ${Math.round(modelCount/total*100)}%` : '占比 0%';
+  document.getElementById('manualOps').textContent = manualCount;
+  document.getElementById('manualOpsRate').textContent = total > 0 ? `占比 ${Math.round(manualCount/total*100)}%` : '占比 0%';
+  document.getElementById('winRate').textContent = winRate + '%';
+}
+
+// ── 筛选 ──────────────────────────────────────────────────────────────
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const dateVal = document.getElementById('dateFilter').value;
+  const now = new Date();
+
+  filtered = allData.filter(r => {
+    if (activeType !== 'all' && r.source !== activeType) return false;
+    if (activeAction !== 'all' && r.action !== activeAction) return false;
+    if (search && !r.name.toLowerCase().includes(search) && !r.code.includes(search)) return false;
+    if (dateVal !== 'all') {
+      const d = new Date(r.time);
+      if (dateVal === 'today' && d.toDateString() !== now.toDateString()) return false;
+      if (dateVal === 'week') {
+        const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+        if (d < weekAgo) return false;
+      }
+      if (dateVal === 'month') {
+        if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+      }
+      if (dateVal === '3month') {
+        const threeAgo = new Date(now); threeAgo.setMonth(now.getMonth() - 3);
+        if (d < threeAgo) return false;
+      }
+    }
+    return true;
+  });
+  currentPage = 1;
+  renderTable();
+}
+
+// ── 渲染表格 ──────────────────────────────────────────────────────────
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filtered.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('historyBody');
+
+  if (page.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center;padding:40px;color:var(--text-4)">
+          <div style="font-size:24px;margin-bottom:12px">历史</div>
+          <div style="margin-bottom:8px">暂无交易记录</div>
+          <div style="font-size:13px;margin-bottom:16px">开始您的第一笔交易吧</div>
+          <button class="btn btn-primary btn-sm" onclick="window.location.href='positions.html'">去交易</button>
+        </td>
+      </tr>
+    `;
+  } else {
+    tbody.innerHTML = page.map(r => {
+      const actionLabel = {buy:'买入', sell:'卖出', signal:'信号'}[r.action] || r.action;
+      const actionColor = r.action === 'buy' ? 'var(--green)' : r.action === 'sell' ? 'var(--red)' : 'var(--orange)';
+      const sourceLabel = r.source === 'model' ? '模型' : '手动';
+      const sourceBg = r.source === 'model' ? 'rgba(249,115,22,.12)' : 'rgba(129,140,248,.12)';
+      const sourceColor = r.source === 'model' ? 'var(--orange)' : '#818cf8';
+      const amount = r.qty > 0 ? '¥' + (r.price * r.qty).toLocaleString('zh-CN', {maximumFractionDigits:0}) : '—';
+      const pnlHtml = r.pnl !== null
+        ? `<span class="${r.pnl >= 0 ? 'text-green' : 'text-red'} font-mono-num">${r.pnl >= 0 ? '+' : ''}¥${r.pnl.toLocaleString()}</span>`
+        : '<span class="text-muted">持仓中</span>';
+      const statusColor = r.status === '成交' ? 'var(--green)' : r.status === '信号' ? 'var(--orange)' : 'var(--text-3)';
+
+      return `<tr>
+        <td class="font-mono text-muted" style="font-size:12px">${r.time}</td>
+        <td><span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${sourceBg};color:${sourceColor}">${sourceLabel}</span></td>
+        <td><span style="font-weight:700;color:${actionColor}">${actionLabel}</span></td>
+        <td>
+          <a href="stock-detail.html?code=${r.code}&name=${encodeURIComponent(r.name)}" style="color:var(--text-1)">
+            <span class="font-semibold">${r.name}</span>
+            <span class="text-xs text-muted font-mono" style="margin-left:6px">${r.code}</span>
+          </a>
+        </td>
+        <td class="font-mono-num">¥${r.price.toLocaleString()}</td>
+        <td class="font-mono-num">${r.qty > 0 ? r.qty.toLocaleString() : '—'}</td>
+        <td class="font-mono-num text-muted">${amount}</td>
+        <td>${pnlHtml}</td>
+        <td class="text-muted text-sm">${r.strategy ? `<span style="color:var(--orange-lt);margin-right:6px">${r.strategy}</span>` : ''}${r.note}</td>
+        <td><span style="font-size:11px;color:${statusColor}">● ${r.status}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('pageInfo').textContent = `共 ${filtered.length} 条`;
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  const pg = document.getElementById('pagination');
+  if (total <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>上一页</button>`;
+  for (let i = 1; i <= total; i++) {
+    const active = i === currentPage ? 'style="background:var(--orange-10);color:var(--orange);border-color:rgba(249,115,22,.2)"' : '';
+    html += `<button class="btn btn-ghost btn-sm" ${active} onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}>下一页</button>`;
+  pg.innerHTML = html;
+}
+
+function goPage(p) {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  if (p < 1 || p > total) return;
+  currentPage = p;
+  renderTable();
+}
+
+// ── 筛选按钮事件 ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('typeFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeType = btn.dataset.type;
+    applyFilters();
+  });
+
+  document.getElementById('actionFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.action-btn');
+    if (!btn) return;
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeAction = btn.dataset.action;
+    applyFilters();
+  });
+
+  document.getElementById('searchInput').addEventListener('input', applyFilters);
+  document.getElementById('dateFilter').addEventListener('change', applyFilters);
+  
+  init();
+  
+  // 卡片光效
+  document.querySelectorAll('.card, .stat-card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  });
+});
+
+// ── 手动记录弹窗 ──────────────────────────────────────────────────────
+function openAddModal() {
+  const now = new Date();
+  document.getElementById('m_time').value = now.toISOString().slice(0,16);
+  document.getElementById('addModal').style.display = 'flex';
+}
+function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+function saveManualRecord() {
+  const action = document.getElementById('m_action').value;
+  const code   = document.getElementById('m_code').value.trim();
+  const name   = document.getElementById('m_name').value.trim();
+  const time   = document.getElementById('m_time').value.replace('T',' ');
+  const price  = parseFloat(document.getElementById('m_price').value) || 0;
+  const qty    = parseInt(document.getElementById('m_qty').value) || 0;
+  const note   = document.getElementById('m_note').value.trim();
+  if (!code || !name || !price) { Utils.showToast('请填写股票代码、名称和价格', 'warning'); return; }
+  const newId = Math.max(...allData.map(r => r.id), 0) + 1;
+  const record = { id:newId, time, source:'manual', action, code, name, price, qty, pnl:null, strategy:'', status:'成交', note };
+  allData.unshift(record);
+  saveHistory(allData);
+  filtered = [...allData];
+  renderStats();
+  applyFilters();
+  closeAddModal();
+}
+
+// ── 导出 ──────────────────────────────────────────────────────────────
+function exportHistory() {
+  const headers = ['时间','来源','操作','代码','名称','价格','数量','金额','盈亏','策略','备注','状态'];
+  const rows = filtered.map(r => [
+    r.time, r.source==='model'?'模型':'手动',
+    {buy:'买入',sell:'卖出',signal:'信号'}[r.action],
+    r.code, r.name, r.price, r.qty,
+    r.qty>0?(r.price*r.qty).toFixed(0):'',
+    r.pnl!==null?r.pnl:'', r.strategy, r.note, r.status
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quantpro_history.csv';
+  a.click();
+}
+
+// ── 显示加载状态 ──────────────────────────────────────────────────────
+function showLoading() {
+  // 统计卡片加载状态
+  const statsContainer = document.getElementById('statsContainer');
+  statsContainer.innerHTML = `
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">总操作次数</div>
+        <div class="stat-value"><div class="loading-spinner"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">模型操作</div>
+        <div class="stat-value"><div class="loading-spinner"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">手动操作</div>
+        <div class="stat-value"><div class="loading-spinner"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">操作胜率</div>
+        <div class="stat-value"><div class="loading-spinner"></div></div>
+        <div class="stat-change" style="color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+  `;
+
+  // 表格加载状态
+  const tbody = document.getElementById('historyBody');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="10" style="text-align:center;padding:60px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+          <div class="loading-spinner" style="width:32px;height:32px;"></div>
+          <div style="color:var(--text-4);font-size:14px">加载操作历史记录...</div>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+// ── 隐藏加载状态 ──────────────────────────────────────────────────────
+function hideLoading() {
+  const statsContainer = document.getElementById('statsContainer');
+  statsContainer.innerHTML = `
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">总操作次数</div>
+        <div class="stat-value" id="totalOps">0</div>
+        <div class="stat-change" style="color:var(--text-3)">本月累计</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">模型操作</div>
+        <div class="stat-value text-orange" id="modelOps">0</div>
+        <div class="stat-change up" id="modelOpsRate">占比 0%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">手动操作</div>
+        <div class="stat-value" id="manualOps">0</div>
+        <div class="stat-change" style="color:var(--text-3)" id="manualOpsRate">占比 0%</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-label">操作胜率</div>
+        <div class="stat-value text-green" id="winRate">0%</div>
+        <div class="stat-change up">盈利操作占比</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── 初始化 ────────────────────────────────────────────────────────────
+async function init() {
+  showLoading();
+  try {
+    allData = await loadHistoryFromAPI();
+    filtered = [...allData];
+    hideLoading();
+    renderStats();
+    applyFilters();
+  } catch (e) {
+    console.error('加载历史记录失败:', e);
+    hideLoading();
+    // 显示错误状态
+    const tbody = document.getElementById('historyBody');
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center;padding:60px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="width:64px;height:64px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div style="color:var(--text-4);font-size:14px">加载失败，请刷新页面重试</div>
+            <button class="btn btn-primary btn-sm" onclick="init()">重新加载</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+}
+</script>
+
+<style>
+.filter-btn.active, .action-btn.active {
+  background: var(--orange-10);
+  color: var(--orange);
+  border-color: rgba(249,115,22,.2);
+}
+button[disabled] { opacity: .35; cursor: not-allowed; }
+</style>
+</body>
+</html>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPro — 资讯中心</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.news-page{padding:20px;}
+.news-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.news-title{font-size:24px;font-weight:600;color:var(--text-1);}
+.news-subtitle{font-size:14px;color:var(--text-3);margin-top:4px;}
+.refresh-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--orange);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;transition:all .2s;}
+.refresh-btn:hover{background:var(--orange-dark);}
+.refresh-btn:disabled{opacity:.6;cursor:not-allowed;}
+.refresh-btn .spinner{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.news-grid{display:grid;grid-template-columns:1fr 360px;gap:20px;}
+.news-main{display:flex;flex-direction:column;gap:20px;}
+.news-sidebar{display:flex;flex-direction:column;gap:20px;}
+.news-card{background:var(--surface-2);border-radius:12px;border:1px solid var(--border-1);overflow:hidden;}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-1);background:var(--surface-1);}
+.card-title{font-size:16px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:8px;}
+.card-title .icon{font-size:18px;}
+.card-body{padding:20px;}
+.summary-content{font-size:14px;line-height:1.8;color:var(--text-2);}
+.summary-content h3{font-size:16px;color:var(--text-1);margin:16px 0 8px;}
+.summary-content h3:first-child{margin-top:0;}
+.summary-content ul{margin:8px 0;padding-left:20px;}
+.summary-content li{margin:6px 0;}
+.summary-content .highlight{color:var(--orange);font-weight:500;}
+.summary-content .positive{color:var(--green);}
+.summary-content .negative{color:var(--red);}
+.summary-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--text-3);}
+.summary-loading .spinner{width:32px;height:32px;border:3px solid var(--border-1);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px;}
+.news-list{max-height:500px;overflow-y:auto;}
+.news-item{padding:12px 0;border-bottom:1px solid var(--border-1);cursor:pointer;transition:background .2s;}
+.news-item:last-child{border-bottom:none;}
+.news-item:hover{background:var(--surface-1);margin:0 -20px;padding:12px 20px;}
+.news-item-title{font-size:14px;color:var(--text-1);line-height:1.5;margin-bottom:6px;}
+.news-item-meta{display:flex;gap:12px;font-size:12px;color:var(--text-4);}
+.news-item-source{background:var(--surface-1);padding:2px 8px;border-radius:4px;}
+.news-item-tags{display:flex;gap:4px;margin-top:6px;}
+.news-tag{font-size:11px;padding:2px 6px;border-radius:3px;background:var(--orange-10);color:var(--orange);}
+.platform-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.platform-btn{padding:6px 12px;font-size:12px;border:1px solid var(--border-1);background:var(--surface-2);border-radius:20px;cursor:pointer;transition:all .2s;}
+.platform-btn:hover{border-color:var(--orange);color:var(--orange);}
+.platform-btn.active{background:var(--orange);color:#fff;border-color:var(--orange);}
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.keyword-cloud{display:flex;flex-wrap:wrap;gap:8px;}
+.keyword-tag{padding:4px 10px;background:var(--surface-1);border-radius:4px;font-size:12px;color:var(--text-2);}
+.keyword-tag.hot{background:var(--red-10);color:var(--red);}
+.keyword-tag.warm{background:var(--orange-10);color:var(--orange);}
+.ai-insight{background:linear-gradient(135deg,var(--orange-10),var(--surface-1));border-radius:8px;padding:16px;margin-top:16px;}
+.ai-insight-title{font-size:14px;font-weight:600;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ai-insight-content{font-size:13px;line-height:1.6;color:var(--text-2);}
+.empty-state{text-align:center;padding:40px;color:var(--text-3);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+@media(max-width:1200px){
+.news-grid{grid-template-columns:1fr;}
+.news-sidebar{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+}
+@media(max-width:768px){
+.news-sidebar{grid-template-columns:1fr;}
+.stat-cards{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">Q</div>
+    <span class="nav-logo-text">QuantPro</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="stocks.html">市场</a>
+    <a href="positions.html">持仓</a>
+    <a href="backtest.html">回测</a>
+    <a href="model-training.html">训练</a>
+    <a href="model-monitor.html">监控</a>
+    <a href="ai.html">AI</a>
+    <a href="news.html" class="active">资讯</a>
+    <a href="history.html">历史</a>
+    <a href="settings.html">设置</a>
+  </div>
+</nav>
+
+<main class="page news-page">
+  <div class="news-header">
+    <div>
+      <h1 class="news-title">资讯中心</h1>
+      <p class="news-subtitle" id="dateDisplay">Loading...</p>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshAllNews()">
+        <span></span> 刷新新闻
+      </button>
+      <button class="refresh-btn" style="background:var(--green)" onclick="generateSummary()">
+        <span>AI</span> AI总结
+      </button>
+    </div>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-value" id="totalNews">--</div>
+        <div class="stat-label">今日新闻</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-value" id="hotTopics">--</div>
+        <div class="stat-label">热门话题</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-value" id="sentimentScore">--</div>
+        <div class="stat-label">市场情绪</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="pulse-dot"></div>
+      <div class="glow-line"></div>
+      <div class="content-wrapper">
+        <div class="stat-value" id="importantCount">--</div>
+        <div class="stat-label">重要资讯</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-grid">
+    <div class="news-main">
+      <div class="news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">分析</span>
+            AI 智能总结
+          </div>
+          <span style="font-size:12px;color:var(--text-4)" id="summaryTime">--</span>
+        </div>
+        <div class="card-body">
+          <div id="summaryContent" class="summary-content">
+            <div class="summary-loading">
+              <div class="spinner"></div>
+              <div>正在分析今日热点...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">热门</span>
+            实时热点
+          </div>
+          <div class="platform-filter">
+            <button class="platform-btn active" onclick="filterPlatform('all')">全部</button>
+            <button class="platform-btn" onclick="filterPlatform('cls-hot')">财联社</button>
+            <button class="platform-btn" onclick="filterPlatform('wallstreetcn-hot')">华尔街</button>
+            <button class="platform-btn" onclick="filterPlatform('xueqiu')">雪球</button>
+            <button class="platform-btn" onclick="filterPlatform('jin10')">金十</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="news-list" id="newsList">
+            <div class="empty-state">
+              <div class="icon">空</div>
+              <div>暂无新闻数据</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-sidebar">
+      <div class="news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">标签</span>
+            热门关键词
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="keyword-cloud" id="keywordCloud">
+            <div class="empty-state" style="padding:20px">暂无关键词</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">趋势</span>
+            关注股票动态
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="stockNews">
+            <div class="empty-state" style="padding:20px">暂无持仓相关新闻</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon">提示</span>
+            AI 投资建议
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="ai-insight">
+            <div class="ai-insight-title">DeepSeek 分析</div>
+            <div class="ai-insight-content" id="aiAdvice">
+              点击"AI总结"按钮获取今日投资建议...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = CONFIG.API_BASE_URL;
+let currentPlatform = 'all';
+let newsData = [];
+
+function formatDate() {
+  const now = new Date();
+  const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('zh-CN', options);
+}
+
+async function loadTrendRaderNews() {
+  try {
+    const data = await safeFetch(`${API_BASE}/api/news/trendrader?platform=${currentPlatform}`);
+    if (data && (data.success || data.data)) {
+      newsData = data.data || [];
+      renderNewsList(newsData);
+      document.getElementById('totalNews').textContent = newsData.length;
+      document.getElementById('importantCount').textContent = newsData.filter(n => n.rank && n.rank <= 5).length;
+    }
+  } catch (e) {
+    console.error('加载新闻失败:', e);
+    loadFallbackNews();
+  }
+}
+
+async function loadFallbackNews() {
+  try {
+    const data = await safeFetch(`${API_BASE}/api/news/list?limit=30`);
+    if (data && data.success) {
+      newsData = data.data || [];
+      renderNewsList(newsData.map(n => ({
+        title: n.title,
+        platform: n.source || '财经新闻',
+        time: n.published_at ? n.published_at.substring(11, 16) : '',
+        rank: 0
+      })));
+      document.getElementById('totalNews').textContent = newsData.length;
+    } else {
+      showNewsFallbackUI();
+    }
+  } catch (e) {
+    console.error('加载新闻失败:', e);
+    showNewsFallbackUI();
+  }
+}
+
+function showNewsFallbackUI() {
+  document.getElementById('totalNews').textContent = '0';
+  document.getElementById('importantCount').textContent = '0';
+  renderNewsList([]);
+}
+
+function renderNewsList(news) {
+  const container = document.getElementById('newsList');
+  if (!news || news.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">空</div>
+        <div>暂无新闻数据</div>
+        <div style="font-size:12px;margin-top:8px">点击"刷新新闻"获取最新资讯</div>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = news.slice(0, 30).map(item => `
+    <div class="news-item" onclick="showNewsDetail('${item.title.replace(/'/g, "\\'")}')">
+      <div class="news-item-title" title="${item.title.replace(/"/g, '&quot;')}">${item.title}</div>
+      <div class="news-item-meta">
+        <span class="news-item-source">${item.platform || '热点'}</span>
+        <span class="news-item-time">${item.time || ''}</span>
+        ${item.rank ? `<span>热度 #${item.rank}</span>` : ''}
+      </div>
+      ${item.tags ? `<div class="news-item-tags">${item.tags.map(t => `<span class="news-tag">${t}</span>`).join('')}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function filterPlatform(platform) {
+  currentPlatform = platform;
+  document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  loadTrendRaderNews();
+}
+
+async function refreshAllNews() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> 刷新中...';
+  try {
+    await safeFetch(`${API_BASE}/api/news/trendrader/refresh`, { method: 'POST', timeout: 120000 });
+  } catch (e) {
+    console.error('刷新请求失败:', e);
+  }
+  await Promise.allSettled([
+    loadTrendRaderNews(),
+    loadKeywords()
+  ]);
+  btn.disabled = false;
+  btn.innerHTML = '<span></span> 刷新新闻';
+}
+
+async function loadKeywords() {
+  try {
+    const data = await safeFetch(`${API_BASE}/api/news/trendrader/keywords`);
+    if (data && data.success && data.keywords) {
+      const container = document.getElementById('keywordCloud');
+      container.innerHTML = data.keywords.slice(0, 20).map(kw => {
+        const cls = kw.count > 10 ? 'hot' : kw.count > 5 ? 'warm' : '';
+        return `<span class="keyword-tag ${cls}">${kw.keyword} (${kw.count})</span>`;
+      }).join('');
+      document.getElementById('hotTopics').textContent = data.keywords.length;
+    }
+  } catch (e) {
+    console.error('加载关键词失败:', e);
+    document.getElementById('keywordCloud').innerHTML = '<div class="empty-state" style="padding:20px">暂无关键词</div>';
+    document.getElementById('hotTopics').textContent = '0';
+  }
+}
+
+async function loadStockNews() {
+  try {
+    const data = await safeFetch(`${API_BASE}/api/news/trendrader/stocks`);
+    if (data && data.success && data.news) {
+      const container = document.getElementById('stockNews');
+      if (data.news.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding:20px"><div style="font-size:12px">暂无持仓相关新闻</div></div>`;
+        return;
+      }
+      container.innerHTML = data.news.slice(0, 5).map(item => `
+        <div class="news-item" style="padding:8px 0">
+          <div class="news-item-title" style="font-size:13px" title="${item.title.replace(/"/g, '&quot;')}">${item.title}</div>
+          <div class="news-item-meta">
+            <span class="news-item-source">${item.stock || ''}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    console.error('加载股票新闻失败:', e);
+    document.getElementById('stockNews').innerHTML = '<div class="empty-state" style="padding:20px">暂无持仓相关新闻</div>';
+  }
+}
+
+async function generateSummary() {
+  const container = document.getElementById('summaryContent');
+  container.innerHTML = `
+    <div class="summary-loading">
+      <div class="spinner"></div>
+      <div>AI 正在分析今日热点...</div>
+      <div style="font-size:12px;margin-top:8px;color:var(--text-4)">预计需要 10-20 秒</div>
+    </div>
+  `;
+  try {
+    const data = await safeFetch(`${API_BASE}/api/news/trendrader/summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 60000
+    });
+    if (data && data.success) {
+      container.innerHTML = data.summary;
+      document.getElementById('summaryTime').textContent = new Date().toLocaleTimeString('zh-CN');
+      if (data.sentiment) {
+        document.getElementById('sentimentScore').textContent = data.sentiment.score || '--';
+      }
+      if (data.advice) {
+        document.getElementById('aiAdvice').textContent = data.advice;
+      }
+    } else {
+      container.innerHTML = `<div style="color:var(--red)">生成失败: ${data.error}</div>`;
+    }
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--red)">生成失败: ${e.message}</div>`;
+  }
+}
+
+function showNewsDetail(title) {
+  const news = newsData.find(n => n.title === title);
+  if (!news) return;
+  
+  const modal = document.getElementById('newsDetailModal');
+  if (!modal) {
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'newsDetailModal';
+    modalDiv.style.cssText = `
+      position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;
+      display:flex;align-items:center;justify-content:center;padding:20px;
+    `;
+    modalDiv.innerHTML = `
+      <div style="background:var(--surface-2);border-radius:16px;width:100%;max-width:600px;max-height:80vh;overflow:hidden;">
+        <div style="padding:20px;border-bottom:1px solid var(--border-1);display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:16px;font-weight:600;">新闻详情</div>
+          <button onclick="closeNewsDetailModal()" style="background:none;border:none;color:var(--text-3);cursor:pointer;font-size:20px;">×</button>
+        </div>
+        <div id="newsDetailContent" style="padding:20px;max-height:60vh;overflow-y:auto;"></div>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+  }
+  
+  document.getElementById('newsDetailContent').innerHTML = `
+    <div style="font-size:18px;font-weight:600;line-height:1.6;margin-bottom:16px;">${news.title}</div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;font-size:13px;color:var(--text-3);">
+      <span style="background:var(--surface-1);padding:4px 10px;border-radius:4px;">${news.platform || '热点'}</span>
+      <span>${news.time || ''}</span>
+      ${news.rank ? `<span style="color:var(--orange);">热度 #${news.rank}</span>` : ''}
+    </div>
+    ${news.tags ? `<div style="display:flex;gap:6px;margin-bottom:16px;">${news.tags.map(t => `<span style="font-size:12px;padding:4px 8px;background:var(--orange-10);color:var(--orange);border-radius:4px;">${t}</span>`).join('')}</div>` : ''}
+    <div style="line-height:1.8;color:var(--text-2);">
+      ${news.content || news.summary || '暂无详细内容'}
+    </div>
+    ${news.url ? `<a href="${news.url}" target="_blank" style="display:inline-block;margin-top:16px;color:var(--orange);font-size:13px;">查看原文 →</a>` : ''}
+  `;
+  
+  document.getElementById('newsDetailModal').style.display = 'flex';
+}
+
+function closeNewsDetailModal() {
+  const modal = document.getElementById('newsDetailModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function init() {
+  formatDate();
+  await Promise.allSettled([
+    loadTrendRaderNews(),
+    loadKeywords(),
+    loadStockNews()
+  ]);
+  // Ensure stat cards never stay as "--" if data loaded partially
+  const summaryEl = document.getElementById('summaryContent');
+  if (summaryEl.querySelector('.summary-loading')) {
+    summaryEl.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">分析</div>
+        <div>点击"AI总结"按钮获取今日智能分析</div>
+      </div>
+    `;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+});
+</script>
+</body>
+</html>
